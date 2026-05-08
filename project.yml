@@ -1,0 +1,59 @@
+name: BilingualKeyboard
+options:
+  bundleIdPrefix: com.example.bilingualkeyboard
+  deploymentTarget:
+    iOS: "16.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.1"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    DEVELOPMENT_TEAM: ""        # set in Xcode → Signing & Capabilities
+    CODE_SIGN_STYLE: Automatic
+    # KeyboardCore consumes AzooKey + SwiftyMarisa (C++) under the Zenzai trait,
+    # so Xcode targets that link KeyboardCore need C++ interop enabled.
+    SWIFT_CXX_INTEROPERABILITY_MODE: default
+    CLANG_CXX_LANGUAGE_STANDARD: "gnu++17"
+    CLANG_CXX_LIBRARY: libc++
+    OTHER_SWIFT_FLAGS: -cxx-interoperability-mode=default -Xcc -std=gnu++17
+
+packages:
+  KeyboardCore:
+    path: .
+
+targets:
+  BilingualKeyboard:
+    type: application
+    platform: iOS
+    sources:
+      - path: iOS/Container
+        excludes:
+          - Resources/Info.plist
+      - path: public/bg.png
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.bilingualkeyboard
+        INFOPLIST_FILE: iOS/Container/Resources/Info.plist
+        TARGETED_DEVICE_FAMILY: "1,2"
+    dependencies:
+      - target: KeyboardExtension
+      - package: KeyboardCore
+        product: KeyboardCore
+
+  KeyboardExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: iOS/KeyboardExtension
+        excludes:
+          - Resources/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.bilingualkeyboard.KeyboardExtension
+        PRODUCT_MODULE_NAME: KeyboardExtension
+        INFOPLIST_FILE: iOS/KeyboardExtension/Resources/Info.plist
+    dependencies:
+      - package: KeyboardCore
+        product: KeyboardCore
