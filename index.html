@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Romaji Intent Lab</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace">
+        <div class="editor-panel">
+          <div class="topbar">
+            <div>
+              <p class="eyebrow">Romaji Intent Lab</p>
+              <h1>Japanese-English classification prototype</h1>
+            </div>
+            <div class="score-legend" aria-label="Score legend">
+              <span><i class="dot ja"></i>Japanese intent</span>
+              <span><i class="dot en"></i>English intent</span>
+              <span><i class="dot amb"></i>Needs context</span>
+            </div>
+          </div>
+
+          <label class="input-label" for="romajiInput">Mixed romaji input</label>
+          <textarea id="romajiInput" spellcheck="false"></textarea>
+
+          <div class="toolbar" aria-label="Example sentences">
+            <button type="button" id="prevExample" title="Previous example" aria-label="Previous example">‹</button>
+            <select id="exampleSelect" aria-label="Choose example"></select>
+            <button type="button" id="nextExample" title="Next example" aria-label="Next example">›</button>
+            <button type="button" id="clearInput">Clear</button>
+          </div>
+        </div>
+
+        <div class="preview-panel">
+          <div class="preview-header">
+            <p class="eyebrow">Committed preview</p>
+            <span id="summaryBadge">0 tokens</span>
+          </div>
+          <div id="outputPreview" class="output-preview" aria-live="polite"></div>
+          <div id="candidatePopover" class="candidate-popover" hidden></div>
+          <div class="candidate-panel">
+            <div class="candidate-head">
+              <p class="eyebrow">Kanji candidates</p>
+              <button type="button" id="resetCandidates">Reset</button>
+            </div>
+            <div id="candidateList" class="candidate-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="analysis-band">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Token analysis</p>
+            <h2>Scores, context pulls, and kana previews</h2>
+          </div>
+          <div id="sentenceSummary" class="sentence-summary"></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Token</th>
+                <th>Class</th>
+                <th>Preview</th>
+                <th>Conversion</th>
+                <th>JA</th>
+                <th>EN</th>
+                <th>Why</th>
+              </tr>
+            </thead>
+            <tbody id="analysisRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="corpus-band">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Starter corpus</p>
+            <h2>Click a row to test an edge case</h2>
+          </div>
+        </div>
+        <div id="corpusGrid" class="corpus-grid"></div>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
