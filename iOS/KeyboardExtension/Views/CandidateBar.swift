@@ -1,4 +1,5 @@
 import UIKit
+import os
 
 /// Horizontal scrolling strip that shows candidate kanji choices.
 /// Tap a candidate to commit.
@@ -6,8 +7,13 @@ public final class CandidateBar: UIView {
 
     public var onSelect: ((String) -> Void)?
 
+    private static let touchLog = Logger(subsystem: "com.bilingual.keyboard", category: "touch")
+    private static let touchDebugEnabled: Bool = ProcessInfo.processInfo.environment["KB_TOUCH_DEBUG"] != nil
+
     private let scroll = UIScrollView()
     private let stack = UIStackView()
+    private var displayedCandidates: [String] = []
+    private var displayedPreview: String = ""
 
     public override init(frame: CGRect) {
         super.init(frame: frame)
@@ -40,7 +46,14 @@ public final class CandidateBar: UIView {
     required init?(coder: NSCoder) { fatalError() }
 
     public func update(candidates: [String], preview: String) {
-        _ = preview
+        guard candidates != displayedCandidates || preview != displayedPreview else { return }
+        if candidates == displayedCandidates {
+            displayedPreview = preview
+            return
+        }
+        displayedCandidates = candidates
+        displayedPreview = preview
+
         stack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         for (idx, candidate) in candidates.enumerated() {
             let isDefault = idx == 0
@@ -68,6 +81,10 @@ public final class CandidateBar: UIView {
                 button.accessibilityTraits.insert(.selected)
             }
             button.addAction(UIAction { [weak self] _ in
+                if Self.touchDebugEnabled {
+                    let msg = "candidateBar.select index=\(idx) text='\(candidate)'"
+                    Self.touchLog.notice("\(msg, privacy: .public)")
+                }
                 self?.onSelect?(candidate)
             }, for: .touchUpInside)
             stack.addArrangedSubview(button)

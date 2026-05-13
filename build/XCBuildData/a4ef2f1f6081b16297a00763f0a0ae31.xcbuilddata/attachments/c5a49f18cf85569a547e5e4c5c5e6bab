@@ -1,0 +1,4 @@
+module EfficientNGram {
+header "EfficientNGram-Swift.h"
+export *
+}

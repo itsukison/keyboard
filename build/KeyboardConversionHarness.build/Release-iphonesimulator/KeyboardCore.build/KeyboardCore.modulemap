@@ -1,0 +1,4 @@
+module KeyboardCore {
+header "KeyboardCore-Swift.h"
+export *
+}

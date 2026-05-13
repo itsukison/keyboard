@@ -57,3 +57,14 @@ targets:
     dependencies:
       - package: KeyboardCore
         product: KeyboardCore
+
+schemes:
+  BilingualKeyboard:
+    build:
+      targets:
+        BilingualKeyboard: all
+        KeyboardExtension: all
+  KeyboardExtension:
+    build:
+      targets:
+        KeyboardExtension: all

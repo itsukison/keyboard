@@ -1,0 +1,31 @@
+{
+  "" : {
+    "const-values" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/build/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/EfficientNGram-primary.swiftconstvalues",
+    "dependencies" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/build/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/EfficientNGram-primary.d",
+    "diagnostics" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/build/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/EfficientNGram-primary.dia",
+    "emit-module-dependencies" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/build/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/EfficientNGram-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/build/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/EfficientNGram-primary-emit-module.dia",
+    "pch" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/build/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/EfficientNGram-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/build/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/EfficientNGram-primary.swiftdeps"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/Sources/EfficientNGram/Inference.swift" : {
+    "index-unit-output-path" : "/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/Inference.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/build/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/Inference.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/build/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/Inference.o"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/Sources/EfficientNGram/Tokenizer.swift" : {
+    "index-unit-output-path" : "/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/Tokenizer.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/build/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/Tokenizer.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/build/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/Tokenizer.o"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/Sources/EfficientNGram/Trainer.swift" : {
+    "index-unit-output-path" : "/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/Trainer.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/build/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/Trainer.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/build/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/Trainer.o"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/build/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/DerivedSources/resource_bundle_accessor.swift" : {
+    "index-unit-output-path" : "/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/resource_bundle_accessor.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/build/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/resource_bundle_accessor.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/AzooKeyKanaKanjiConverter/build/AzooKeyKanaKanjiConverter.build/Release-iphonesimulator/EfficientNGram.build/Objects-normal/arm64/resource_bundle_accessor.o"
+  }
+}

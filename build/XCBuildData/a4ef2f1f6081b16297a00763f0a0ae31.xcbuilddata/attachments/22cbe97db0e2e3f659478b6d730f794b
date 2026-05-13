@@ -1,0 +1,4 @@
+module SwiftyMarisa {
+header "SwiftyMarisa-Swift.h"
+export *
+}

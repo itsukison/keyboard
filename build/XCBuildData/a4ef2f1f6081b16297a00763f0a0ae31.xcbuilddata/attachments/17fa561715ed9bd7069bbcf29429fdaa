@@ -1,0 +1,4 @@
+module marisa_trie {
+umbrella "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/SwiftyMarisa/Sources/marisa-trie/include"
+export *
+}

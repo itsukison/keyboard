@@ -1,0 +1,59 @@
+{
+  "" : {
+    "diagnostics" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardExtension-primary.dia",
+    "emit-module-dependencies" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardExtension-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardExtension-primary-emit-module.dia",
+    "pch" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardExtension-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardExtension-primary.swiftdeps"
+  },
+  "/Users/itsuki/Desktop/keyboard/iOS/KeyboardExtension/ConversionCoordinator.swift" : {
+    "const-values" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/ConversionCoordinator.swiftconstvalues",
+    "dependencies" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/ConversionCoordinator.d",
+    "diagnostics" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/ConversionCoordinator.dia",
+    "index-unit-output-path" : "/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/ConversionCoordinator.o",
+    "llvm-bc" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/ConversionCoordinator.bc",
+    "object" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/ConversionCoordinator.o",
+    "swift-dependencies" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/ConversionCoordinator.swiftdeps",
+    "swiftmodule" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/ConversionCoordinator~partial.swiftmodule"
+  },
+  "/Users/itsuki/Desktop/keyboard/iOS/KeyboardExtension/DisplayedTextManager.swift" : {
+    "const-values" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/DisplayedTextManager.swiftconstvalues",
+    "dependencies" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/DisplayedTextManager.d",
+    "diagnostics" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/DisplayedTextManager.dia",
+    "index-unit-output-path" : "/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/DisplayedTextManager.o",
+    "llvm-bc" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/DisplayedTextManager.bc",
+    "object" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/DisplayedTextManager.o",
+    "swift-dependencies" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/DisplayedTextManager.swiftdeps",
+    "swiftmodule" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/DisplayedTextManager~partial.swiftmodule"
+  },
+  "/Users/itsuki/Desktop/keyboard/iOS/KeyboardExtension/KeyboardViewController.swift" : {
+    "const-values" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardViewController.swiftconstvalues",
+    "dependencies" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardViewController.d",
+    "diagnostics" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardViewController.dia",
+    "index-unit-output-path" : "/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardViewController.o",
+    "llvm-bc" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardViewController.bc",
+    "object" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardViewController.o",
+    "swift-dependencies" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardViewController.swiftdeps",
+    "swiftmodule" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardViewController~partial.swiftmodule"
+  },
+  "/Users/itsuki/Desktop/keyboard/iOS/KeyboardExtension/Views/CandidateBar.swift" : {
+    "const-values" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/CandidateBar.swiftconstvalues",
+    "dependencies" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/CandidateBar.d",
+    "diagnostics" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/CandidateBar.dia",
+    "index-unit-output-path" : "/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/CandidateBar.o",
+    "llvm-bc" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/CandidateBar.bc",
+    "object" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/CandidateBar.o",
+    "swift-dependencies" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/CandidateBar.swiftdeps",
+    "swiftmodule" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/CandidateBar~partial.swiftmodule"
+  },
+  "/Users/itsuki/Desktop/keyboard/iOS/KeyboardExtension/Views/KeyboardView.swift" : {
+    "const-values" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardView.swiftconstvalues",
+    "dependencies" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardView.d",
+    "diagnostics" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardView.dia",
+    "index-unit-output-path" : "/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardView.o",
+    "llvm-bc" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardView.bc",
+    "object" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardView.o",
+    "swift-dependencies" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardView.swiftdeps",
+    "swiftmodule" : "/Users/itsuki/Desktop/keyboard/build/BilingualKeyboard.build/Debug-iphonesimulator/KeyboardExtension.build/Objects-normal/arm64/KeyboardView~partial.swiftmodule"
+  }
+}

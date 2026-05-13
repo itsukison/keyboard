@@ -10,10 +10,20 @@ public final class InputController {
     private let adapter: KanaKanjiAdapter
     private let useZenzai: Bool
     private var _leftSideContext: String = ""
+    /// Tail of recently committed text retaining both JA and EN. Drives the
+    /// document-level `LanguagePrior`. Kept separate from `_leftSideContext`
+    /// (which feeds zenzai and is JA-only by design — see file header).
+    private var _recentCommittedTail: String = ""
+    private static let recentCommittedTailLimit = 200
     private let lock = NSLock()
+    private let conversionLock = NSLock()
     public var leftSideContext: String {
         lock.lock(); defer { lock.unlock() }
         return _leftSideContext
+    }
+    public var recentCommittedTail: String {
+        lock.lock(); defer { lock.unlock() }
+        return _recentCommittedTail
     }
 
     public init(
@@ -68,8 +78,11 @@ public final class InputController {
     /// Run detection + conversion for the current uncommitted input buffer.
     /// Caller passes only the *uncommitted* romaji; committed text lives in `leftSideContext`.
     /// Safe to call concurrently with `commit(japanese:)` and `reset()`.
-    public func convert(_ raw: String) -> LiveConversion {
-        let spans = detector.detect(raw)
+    public func convert(_ raw: String, documentPrior: LanguagePrior = .neutral) -> LiveConversion {
+        conversionLock.lock()
+        defer { conversionLock.unlock() }
+
+        let spans = detector.detect(raw, documentPrior: documentPrior)
         lock.lock()
         var contextBefore = _leftSideContext
         lock.unlock()
@@ -105,10 +118,27 @@ public final class InputController {
     public func commit(japanese: String) {
         lock.lock(); defer { lock.unlock() }
         _leftSideContext += japanese
+        appendToRecentTailLocked(japanese)
+    }
+
+    /// Append a committed English fragment to the document-prior tail only.
+    /// Does not pollute the zenzai `leftSideContext`.
+    public func commitEnglish(_ english: String) {
+        lock.lock(); defer { lock.unlock() }
+        appendToRecentTailLocked(english)
     }
 
     public func reset() {
         lock.lock(); defer { lock.unlock() }
         _leftSideContext = ""
+        _recentCommittedTail = ""
+    }
+
+    private func appendToRecentTailLocked(_ piece: String) {
+        _recentCommittedTail += piece
+        if _recentCommittedTail.count > Self.recentCommittedTailLimit {
+            let drop = _recentCommittedTail.count - Self.recentCommittedTailLimit
+            _recentCommittedTail.removeFirst(drop)
+        }
     }
 }

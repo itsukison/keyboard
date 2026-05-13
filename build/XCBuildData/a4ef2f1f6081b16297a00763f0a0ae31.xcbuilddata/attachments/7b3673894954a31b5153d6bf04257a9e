@@ -1,0 +1,60 @@
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BinaryInteger\ extensions.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+BitwiseOperations.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+ChunkedBitsIterators.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+Codable.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+Collection.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+Copy.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+CustomReflectable.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+Descriptions.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+Equatable.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+ExpressibleByArrayLiteral.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+ExpressibleByStringLiteral.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+Extras.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+Fill.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+Hashable.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+Initializers.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+Invariants.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+LosslessStringConvertible.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+RandomBits.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+RangeReplaceableCollection.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+Shifts.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray+Testing.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray._UnsafeHandle.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitArray/BitArray.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+BidirectionalCollection.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+Codable.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+CustomDebugStringConvertible.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+CustomReflectable.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+CustomStringConvertible.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+Equatable.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+ExpressibleByArrayLiteral.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+Extras.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+Hashable.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+Initializers.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+Invariants.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+Random.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+SetAlgebra\ basics.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+SetAlgebra\ conformance.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+SetAlgebra\ formIntersection.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+SetAlgebra\ formSymmetricDifference.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+SetAlgebra\ formUnion.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+SetAlgebra\ intersection.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+SetAlgebra\ isDisjoint.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+SetAlgebra\ isEqualSet.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+SetAlgebra\ isStrictSubset.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+SetAlgebra\ isStrictSuperset.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+SetAlgebra\ isSubset.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+SetAlgebra\ isSuperset.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+SetAlgebra\ subtract.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+SetAlgebra\ subtracting.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+SetAlgebra\ symmetricDifference.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+SetAlgebra\ union.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet+Sorted\ Collection\ APIs.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet.Counted.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet.Index.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet._UnsafeHandle.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/BitSet/BitSet.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/Shared/Range+Utilities.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/Shared/Slice+Utilities.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/Shared/UInt+Tricks.swift
+/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/BitCollections/Shared/_Word.swift

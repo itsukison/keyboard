@@ -1,0 +1,56 @@
+{
+  "" : {
+    "const-values" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Jinja-primary.swiftconstvalues",
+    "dependencies" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Jinja-primary.d",
+    "diagnostics" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Jinja-primary.dia",
+    "emit-module-dependencies" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Jinja-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Jinja-primary-emit-module.dia",
+    "pch" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Jinja-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Jinja-primary.swiftdeps"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/Sources/Ast.swift" : {
+    "index-unit-output-path" : "/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Ast.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Ast.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Ast.o"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/Sources/Environment.swift" : {
+    "index-unit-output-path" : "/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Environment.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Environment.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Environment.o"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/Sources/Error.swift" : {
+    "index-unit-output-path" : "/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Error.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Error.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Error.o"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/Sources/Extensions/StringExtension.swift" : {
+    "index-unit-output-path" : "/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/StringExtension.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/StringExtension.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/StringExtension.o"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/Sources/Lexer.swift" : {
+    "index-unit-output-path" : "/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Lexer.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Lexer.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Lexer.o"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/Sources/Parser.swift" : {
+    "index-unit-output-path" : "/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Parser.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Parser.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Parser.o"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/Sources/Runtime.swift" : {
+    "index-unit-output-path" : "/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Runtime.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Runtime.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Runtime.o"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/Sources/Template.swift" : {
+    "index-unit-output-path" : "/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Template.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Template.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Template.o"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/Sources/Utilities.swift" : {
+    "index-unit-output-path" : "/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Utilities.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Utilities.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/Jinja/build/Jinja.build/Release-iphonesimulator/Jinja.build/Objects-normal/arm64/Utilities.o"
+  }
+}

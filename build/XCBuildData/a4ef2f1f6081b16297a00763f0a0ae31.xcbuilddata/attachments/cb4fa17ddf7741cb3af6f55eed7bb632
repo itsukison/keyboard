@@ -1,0 +1,41 @@
+{
+  "" : {
+    "const-values" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/HeapModule-primary.swiftconstvalues",
+    "dependencies" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/HeapModule-primary.d",
+    "diagnostics" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/HeapModule-primary.dia",
+    "emit-module-dependencies" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/HeapModule-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/HeapModule-primary-emit-module.dia",
+    "pch" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/HeapModule-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/HeapModule-primary.swiftdeps"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/HeapModule/Heap+Descriptions.swift" : {
+    "index-unit-output-path" : "/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/Heap+Descriptions.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/Heap+Descriptions.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/Heap+Descriptions.o"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/HeapModule/Heap+ExpressibleByArrayLiteral.swift" : {
+    "index-unit-output-path" : "/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/Heap+ExpressibleByArrayLiteral.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/Heap+ExpressibleByArrayLiteral.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/Heap+ExpressibleByArrayLiteral.o"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/HeapModule/Heap+Invariants.swift" : {
+    "index-unit-output-path" : "/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/Heap+Invariants.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/Heap+Invariants.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/Heap+Invariants.o"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/HeapModule/Heap+UnsafeHandle.swift" : {
+    "index-unit-output-path" : "/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/Heap+UnsafeHandle.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/Heap+UnsafeHandle.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/Heap+UnsafeHandle.o"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/HeapModule/Heap.swift" : {
+    "index-unit-output-path" : "/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/Heap.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/Heap.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/Heap.o"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/Sources/HeapModule/_HeapNode.swift" : {
+    "index-unit-output-path" : "/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/_HeapNode.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/_HeapNode.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/swift-collections/build/swift-collections.build/Release-iphonesimulator/HeapModule.build/Objects-normal/arm64/_HeapNode.o"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "" : {
+    "const-values" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/SwiftyMarisa/build/SwiftyMarisa.build/Release-iphonesimulator/SwiftyMarisa.build/Objects-normal/arm64/SwiftyMarisa-primary.swiftconstvalues",
+    "dependencies" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/SwiftyMarisa/build/SwiftyMarisa.build/Release-iphonesimulator/SwiftyMarisa.build/Objects-normal/arm64/SwiftyMarisa-primary.d",
+    "diagnostics" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/SwiftyMarisa/build/SwiftyMarisa.build/Release-iphonesimulator/SwiftyMarisa.build/Objects-normal/arm64/SwiftyMarisa-primary.dia",
+    "emit-module-dependencies" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/SwiftyMarisa/build/SwiftyMarisa.build/Release-iphonesimulator/SwiftyMarisa.build/Objects-normal/arm64/SwiftyMarisa-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/SwiftyMarisa/build/SwiftyMarisa.build/Release-iphonesimulator/SwiftyMarisa.build/Objects-normal/arm64/SwiftyMarisa-primary-emit-module.dia",
+    "pch" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/SwiftyMarisa/build/SwiftyMarisa.build/Release-iphonesimulator/SwiftyMarisa.build/Objects-normal/arm64/SwiftyMarisa-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/SwiftyMarisa/build/SwiftyMarisa.build/Release-iphonesimulator/SwiftyMarisa.build/Objects-normal/arm64/SwiftyMarisa-primary.swiftdeps"
+  },
+  "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/SwiftyMarisa/Sources/SwiftyMarisa/SwiftyMarisa.swift" : {
+    "index-unit-output-path" : "/SwiftyMarisa.build/Release-iphonesimulator/SwiftyMarisa.build/Objects-normal/arm64/SwiftyMarisa.o",
+    "llvm-bc" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/SwiftyMarisa/build/SwiftyMarisa.build/Release-iphonesimulator/SwiftyMarisa.build/Objects-normal/arm64/SwiftyMarisa.bc",
+    "object" : "/Users/itsuki/Library/Developer/Xcode/DerivedData/BilingualKeyboard-cxxbufsfxqmbtbfguiifkyfakfap/SourcePackages/checkouts/SwiftyMarisa/build/SwiftyMarisa.build/Release-iphonesimulator/SwiftyMarisa.build/Objects-normal/arm64/SwiftyMarisa.o"
+  }
+}

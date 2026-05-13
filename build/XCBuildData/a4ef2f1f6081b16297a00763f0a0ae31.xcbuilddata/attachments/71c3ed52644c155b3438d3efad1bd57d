@@ -1,0 +1,56 @@
+{
+  "" : {
+    "const-values" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/KeyboardCore-primary.swiftconstvalues",
+    "dependencies" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/KeyboardCore-primary.d",
+    "diagnostics" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/KeyboardCore-primary.dia",
+    "emit-module-dependencies" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/KeyboardCore-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/KeyboardCore-primary-emit-module.dia",
+    "pch" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/KeyboardCore-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/KeyboardCore-primary.swiftdeps"
+  },
+  "/Users/itsuki/Desktop/keyboard/Sources/KeyboardCore/BilingualSpanDetector.swift" : {
+    "index-unit-output-path" : "/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/BilingualSpanDetector.o",
+    "llvm-bc" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/BilingualSpanDetector.bc",
+    "object" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/BilingualSpanDetector.o"
+  },
+  "/Users/itsuki/Desktop/keyboard/Sources/KeyboardCore/EnglishAutocorrectGate.swift" : {
+    "index-unit-output-path" : "/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/EnglishAutocorrectGate.o",
+    "llvm-bc" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/EnglishAutocorrectGate.bc",
+    "object" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/EnglishAutocorrectGate.o"
+  },
+  "/Users/itsuki/Desktop/keyboard/Sources/KeyboardCore/ExpectedEditTracker.swift" : {
+    "index-unit-output-path" : "/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/ExpectedEditTracker.o",
+    "llvm-bc" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/ExpectedEditTracker.bc",
+    "object" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/ExpectedEditTracker.o"
+  },
+  "/Users/itsuki/Desktop/keyboard/Sources/KeyboardCore/InputCommitPlanner.swift" : {
+    "index-unit-output-path" : "/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/InputCommitPlanner.o",
+    "llvm-bc" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/InputCommitPlanner.bc",
+    "object" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/InputCommitPlanner.o"
+  },
+  "/Users/itsuki/Desktop/keyboard/Sources/KeyboardCore/InputController.swift" : {
+    "index-unit-output-path" : "/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/InputController.o",
+    "llvm-bc" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/InputController.bc",
+    "object" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/InputController.o"
+  },
+  "/Users/itsuki/Desktop/keyboard/Sources/KeyboardCore/KanaKanjiAdapter.swift" : {
+    "index-unit-output-path" : "/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/KanaKanjiAdapter.o",
+    "llvm-bc" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/KanaKanjiAdapter.bc",
+    "object" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/KanaKanjiAdapter.o"
+  },
+  "/Users/itsuki/Desktop/keyboard/Sources/KeyboardCore/KeyboardHitMap.swift" : {
+    "index-unit-output-path" : "/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/KeyboardHitMap.o",
+    "llvm-bc" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/KeyboardHitMap.bc",
+    "object" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/KeyboardHitMap.o"
+  },
+  "/Users/itsuki/Desktop/keyboard/Sources/KeyboardCore/Romaji.swift" : {
+    "index-unit-output-path" : "/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/Romaji.o",
+    "llvm-bc" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/Romaji.bc",
+    "object" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/Romaji.o"
+  },
+  "/Users/itsuki/Desktop/keyboard/Sources/KeyboardCore/Types.swift" : {
+    "index-unit-output-path" : "/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/Types.o",
+    "llvm-bc" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/Types.bc",
+    "object" : "/Users/itsuki/Desktop/keyboard/build/KeyboardConversionHarness.build/Release-iphonesimulator/KeyboardCore.build/Objects-normal/arm64/Types.o"
+  }
+}

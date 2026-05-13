@@ -1,5 +1,22 @@
 import Foundation
 
+/// A coarse document-level bias derived from the surrounding text already in
+/// the host text field. Values are roughly in `[-1, +1]`; `.neutral` disables
+/// the bias entirely. Only nudges tokens that are otherwise ambiguous —
+/// strong signals (dictionary hits, impossible-in-JA consonant clusters) are
+/// not overridden.
+public struct LanguagePrior: Equatable, Sendable {
+    public var jaBias: Double
+    public var enBias: Double
+
+    public init(jaBias: Double, enBias: Double) {
+        self.jaBias = jaBias
+        self.enBias = enBias
+    }
+
+    public static let neutral = LanguagePrior(jaBias: 0, enBias: 0)
+}
+
 public struct BilingualSpanDetector: Sendable {
     public let englishWords: Set<String>
     private let embeddedEnglishWords: [String]
@@ -104,7 +121,7 @@ public struct BilingualSpanDetector: Sendable {
 
     // MARK: - Public API
 
-    public func detect(_ raw: String) -> [DetectedSpan] {
+    public func detect(_ raw: String, documentPrior: LanguagePrior = .neutral) -> [DetectedSpan] {
         let parts = splitPreservingWhitespace(raw)
         let words = parts.compactMap { $0.isSpace ? nil : $0.text }
         if words.isEmpty {
@@ -126,7 +143,7 @@ public struct BilingualSpanDetector: Sendable {
         // Step 2: flatten + smooth across all pieces (neighbors cross word
         // boundaries — "we" right after "korekara" needs to see "korekara").
         var flat: [ScoredToken] = wordPieces.flatMap { $0 }
-        smooth(tokens: &flat)
+        smooth(tokens: &flat, documentPrior: documentPrior)
 
         // Step 3: redistribute classifications back to wordPieces.
         var cursor = 0
@@ -345,7 +362,11 @@ public struct BilingualSpanDetector: Sendable {
         )
     }
 
-    private func smooth(tokens: inout [ScoredToken]) {
+    /// Weight on the document-level prior. Small enough to break ties on
+    /// ambiguous tokens without flipping strong signals.
+    private static let priorWeight: Double = 0.6
+
+    private func smooth(tokens: inout [ScoredToken], documentPrior: LanguagePrior = .neutral) {
         for idx in tokens.indices {
             // Pre-split English matches are immutable — skip neighbor smoothing.
             if tokens[idx].explicitEnglish { continue }
@@ -423,6 +444,23 @@ public struct BilingualSpanDetector: Sendable {
                 }
             }
             start = max(start + 1, end)
+        }
+
+        // Document-level prior. Only nudges tokens that are still ambiguous
+        // after neighbor smoothing — never overrides dictionary hits, kana-
+        // impossible clusters, or pre-split English matches.
+        if documentPrior != .neutral {
+            let weight = Self.priorWeight
+            for idx in tokens.indices {
+                if tokens[idx].explicitEnglish { continue }
+                let isAmbiguous = Self.weakShort.contains(tokens[idx].clean)
+                    || abs(tokens[idx].margin) < 1.2
+                guard isAmbiguous else { continue }
+                tokens[idx].ja += max(0, documentPrior.jaBias) * weight
+                tokens[idx].en += max(0, documentPrior.enBias) * weight
+                if documentPrior.jaBias < 0 { tokens[idx].en += -documentPrior.jaBias * weight }
+                if documentPrior.enBias < 0 { tokens[idx].ja += -documentPrior.enBias * weight }
+            }
         }
 
         for idx in tokens.indices {

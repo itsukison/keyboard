@@ -41,5 +41,14 @@ let package = Package(
                 .interoperabilityMode(.Cxx)
             ]
         ),
+        .testTarget(
+            name: "KeyboardCoreTests",
+            dependencies: [
+                "KeyboardCore",
+            ],
+            swiftSettings: [
+                .interoperabilityMode(.Cxx)
+            ]
+        ),
     ]
 )

@@ -1,0 +1,4 @@
+module KanaKanjiConverterModuleWithDefaultDictionary {
+header "KanaKanjiConverterModuleWithDefaultDictionary-Swift.h"
+export *
+}

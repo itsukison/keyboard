@@ -1,4 +1,18 @@
+import os
+import KeyboardCore
 import UIKit
+
+extension UIInputView: @retroactive UIInputViewAudioFeedback {
+    open var enableInputClicksWhenVisible: Bool { true }
+}
+
+/// Shared diagnostic logger for the touch/hit-test investigation.
+/// Subsystem: `com.bilingual.keyboard`, category: `touch`.
+/// Enabled when env var `KB_TOUCH_DEBUG` is set.
+enum KeyboardTouchDiagnostics {
+    static let log = Logger(subsystem: "com.bilingual.keyboard", category: "touch")
+    static let enabled: Bool = ProcessInfo.processInfo.environment["KB_TOUCH_DEBUG"] != nil
+}
 
 enum KeyboardColors {
     static let chromeBackground = UIColor(red: 0.81, green: 0.82, blue: 0.85, alpha: 1.0)
@@ -42,6 +56,7 @@ public final class KeyboardView: UIView {
     private var page: Page = .letters
     public private(set) var shiftState: ShiftState = .off
     private var rowsContainer: UIStackView!
+    private var touchSeq: UInt64 = 0
 
     public override init(frame: CGRect) {
         super.init(frame: frame)
@@ -61,6 +76,298 @@ public final class KeyboardView: UIView {
         rebuild()
     }
 
+    // MARK: - Keyboard-level hit targeting
+
+    private struct ActiveTouch {
+        let button: KeyButton
+        let resolution: KeyboardHitMap<Int>.Resolution
+        let firedOnBegin: Bool
+    }
+
+    private struct ResolvedKey {
+        let button: KeyButton
+        let resolution: KeyboardHitMap<Int>.Resolution
+    }
+
+    private var hitMap = KeyboardHitMap<Int>(
+        bounds: KeyboardHitRect(x: 0, y: 0, width: 0, height: 0),
+        rows: []
+    )
+    private var keyButtonsByHitID: [Int: KeyButton] = [:]
+    private var hitMapNeedsRebuild = true
+    private var activeTouches: [ObjectIdentifier: ActiveTouch] = [:]
+    private var backspaceRepeatTouchID: ObjectIdentifier?
+    private var backspaceRepeatTimer: Timer?
+
+    /// Make the keyboard surface itself receive all touches in the key area.
+    /// Visible `KeyButton` frames stay as caps; this view resolves every point
+    /// in its bounds to the nearest key and drives highlight/action state.
+    public override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        guard isUserInteractionEnabled, !isHidden, alpha >= 0.01, bounds.contains(point) else {
+            return nil
+        }
+        return self
+    }
+
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        rowsContainer.layoutIfNeeded()
+        rebuildHitMap()
+    }
+
+    private func rebuildHitMap() {
+        var rows: [KeyboardHitMap<Int>.Row] = []
+        var buttonsByID: [Int: KeyButton] = [:]
+        var nextID = 0
+
+        for rowView in rowsContainer.arrangedSubviews.compactMap({ $0 as? KeyboardRow }) {
+            let buttons = rowView.subviews
+                .compactMap { $0 as? KeyButton }
+                .sorted { $0.frame.minX < $1.frame.minX }
+            guard !buttons.isEmpty else { continue }
+
+            var keyFrames: [KeyboardHitMap<Int>.KeyFrame] = []
+            for button in buttons {
+                let id = nextID
+                nextID += 1
+                buttonsByID[id] = button
+                keyFrames.append(.init(
+                    key: id,
+                    rect: button.convert(button.bounds, to: self).keyboardHitRect
+                ))
+            }
+            rows.append(.init(
+                rect: rowView.convert(rowView.bounds, to: self).keyboardHitRect,
+                keys: keyFrames
+            ))
+        }
+
+        keyButtonsByHitID = buttonsByID
+        hitMap = KeyboardHitMap(bounds: bounds.keyboardHitRect, rows: rows)
+        hitMapNeedsRebuild = false
+    }
+
+    private func resolveKey(at point: CGPoint) -> ResolvedKey? {
+        if hitMapNeedsRebuild || keyButtonsByHitID.isEmpty {
+            layoutIfNeeded()
+            rowsContainer.layoutIfNeeded()
+            rebuildHitMap()
+        }
+        guard let resolution = hitMap.resolve(point.keyboardHitPoint),
+              let button = keyButtonsByHitID[resolution.key] else {
+            return nil
+        }
+        return ResolvedKey(button: button, resolution: resolution)
+    }
+
+    public override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesBegan(touches, with: event)
+        for touch in touches {
+            let id = ObjectIdentifier(touch)
+            let point = touch.location(in: self)
+            guard let resolved = resolveKey(at: point) else {
+                logTouch(phase: "began", touch: touch, resolved: nil)
+                continue
+            }
+            resolved.button.setResolvedHighlighted(true)
+            let firesOnBegin = resolved.button.spec.event.firesOnTouchBegin
+            activeTouches[id] = ActiveTouch(
+                button: resolved.button,
+                resolution: resolved.resolution,
+                firedOnBegin: firesOnBegin
+            )
+            logTouch(phase: "began", touch: touch, resolved: resolved)
+            if firesOnBegin {
+                fire(resolved.button)
+            }
+            if case .backspace = resolved.button.spec.event {
+                startBackspaceRepeat(for: id)
+            }
+        }
+    }
+
+    public override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesMoved(touches, with: event)
+        guard KeyboardTouchDiagnostics.enabled else { return }
+        for touch in touches {
+            let active = activeTouches[ObjectIdentifier(touch)]
+            let resolved = active.map { ResolvedKey(button: $0.button, resolution: $0.resolution) }
+            logTouch(phase: "moved", touch: touch, resolved: resolved)
+        }
+    }
+
+    public override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesEnded(touches, with: event)
+        for touch in touches {
+            finishTouch(touch, phase: "ended", shouldFireEndAction: true)
+        }
+    }
+
+    public override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesCancelled(touches, with: event)
+        for touch in touches {
+            finishTouch(touch, phase: "cancelled", shouldFireEndAction: false)
+        }
+    }
+
+    private func finishTouch(_ touch: UITouch, phase: String, shouldFireEndAction: Bool) {
+        let id = ObjectIdentifier(touch)
+        guard let active = activeTouches.removeValue(forKey: id) else {
+            logTouch(phase: phase, touch: touch, resolved: nil)
+            return
+        }
+        if backspaceRepeatTouchID == id {
+            stopBackspaceRepeat()
+        }
+        active.button.setResolvedHighlighted(false)
+        let resolved = ResolvedKey(button: active.button, resolution: active.resolution)
+        logTouch(phase: phase, touch: touch, resolved: resolved)
+        if shouldFireEndAction, !active.firedOnBegin {
+            fire(active.button)
+        }
+    }
+
+    private func fire(_ button: KeyButton) {
+        onKey?(button.spec.event)
+        button.playFeedback()
+        logKeyFired(button)
+    }
+
+    private func startBackspaceRepeat(for touchID: ObjectIdentifier) {
+        stopBackspaceRepeat()
+        backspaceRepeatTouchID = touchID
+        backspaceRepeatTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: false) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.repeatBackspace()
+            }
+        }
+    }
+
+    private func repeatBackspace() {
+        guard let touchID = backspaceRepeatTouchID,
+              let active = activeTouches[touchID],
+              case .backspace = active.button.spec.event else {
+            stopBackspaceRepeat()
+            return
+        }
+        fire(active.button)
+        backspaceRepeatTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                guard let touchID = self.backspaceRepeatTouchID,
+                      let active = self.activeTouches[touchID],
+                      case .backspace = active.button.spec.event else {
+                    self.stopBackspaceRepeat()
+                    return
+                }
+                self.fire(active.button)
+            }
+        }
+    }
+
+    private func stopBackspaceRepeat() {
+        backspaceRepeatTimer?.invalidate()
+        backspaceRepeatTimer = nil
+        backspaceRepeatTouchID = nil
+    }
+
+    private func logTouch(phase: String, touch: UITouch, resolved: ResolvedKey?) {
+        guard KeyboardTouchDiagnostics.enabled else { return }
+        touchSeq += 1
+        let seq = touchSeq
+        let point = touch.location(in: self)
+        let rawHit = keyCap(at: point)
+
+        let hitDescription: String
+        if let resolved {
+            let key = resolved.button
+            let frame = key.convert(key.bounds, to: self)
+            hitDescription = "RESOLVED "
+                + "rawHit='\(rawHit?.spec.label ?? "nil")' "
+                + "resolvedKey='\(key.spec.label)' "
+                + "event=\(eventDescription(key.spec.event)) "
+                + "zone=\(resolved.resolution.isDirectHit ? "direct-cap" : "virtual") "
+                + "rowDist=\(fmt(resolved.resolution.rowDistance))pt "
+                + "centerDist=\(fmt(resolved.resolution.centerDistance))pt "
+                + "edgeDist=\(fmt(resolved.resolution.edgeDistance))pt "
+                + "frame=(x=\(fmt(frame.origin.x)) y=\(fmt(frame.origin.y)) "
+                + "w=\(fmt(frame.size.width)) h=\(fmt(frame.size.height)))"
+        } else {
+            hitDescription = "UNRESOLVED rawHit='\(rawHit?.spec.label ?? "nil")'"
+        }
+
+        let message = "touch#\(seq)"
+            + " phase=\(phase)"
+            + " point=(\(fmt(point.x)), \(fmt(point.y)))"
+            + " page=\(pageDescription)"
+            + " shift=\(shiftDescription)"
+            + " " + hitDescription
+        KeyboardTouchDiagnostics.log.notice("\(message, privacy: .public)")
+    }
+
+    private func keyCap(at point: CGPoint) -> KeyButton? {
+        for button in keyButtonsByHitID.values {
+            let frame = button.convert(button.bounds, to: self)
+            if frame.contains(point) {
+                return button
+            }
+        }
+        return nil
+    }
+
+    private func logKeyFired(_ button: KeyButton) {
+        guard KeyboardTouchDiagnostics.enabled else { return }
+        let f = button.convert(button.bounds, to: self)
+        let firedMessage = "key.fired"
+            + " label='\(button.spec.label)'"
+            + " event=\(eventDescription(button.spec.event))"
+            + " frame=(x=\(fmt(f.origin.x)) y=\(fmt(f.origin.y))"
+            + " w=\(fmt(f.size.width)) h=\(fmt(f.size.height)))"
+        KeyboardTouchDiagnostics.log.notice("\(firedMessage, privacy: .public)")
+    }
+
+    private func fmt(_ v: CGFloat) -> String {
+        fmt(Double(v))
+    }
+
+    private func fmt(_ v: Double) -> String {
+        String(format: "%.1f", v)
+    }
+
+    private var pageDescription: String {
+        switch page {
+        case .letters: return "letters"
+        case .numbers: return "numbers"
+        case .symbols: return "symbols"
+        }
+    }
+
+    private var shiftDescription: String {
+        switch shiftState {
+        case .off: return "off"
+        case .shifted: return "shifted"
+        case .locked: return "locked"
+        }
+    }
+
+    private func eventDescription(_ event: KeyEvent) -> String {
+        switch event {
+        case .character(let s): return "character('\(s)')"
+        case .backspace: return "backspace"
+        case .space: return "space"
+        case .returnKey: return "returnKey"
+        case .shift: return "shift"
+        case .switchPage(let p):
+            switch p {
+            case .letters: return "switchPage(letters)"
+            case .numbers: return "switchPage(numbers)"
+            case .symbols: return "switchPage(symbols)"
+            }
+        case .nextKeyboard: return "nextKeyboard"
+        case .dismiss: return "dismiss"
+        }
+    }
+
     required init?(coder: NSCoder) { fatalError() }
 
     public func cycleShift() {
@@ -72,11 +379,13 @@ public final class KeyboardView: UIView {
     }
 
     public func setShift(_ state: ShiftState) {
+        guard shiftState != state else { return }
         shiftState = state
         rebuild()
     }
 
     public func switchPage(_ page: Page) {
+        guard self.page != page || shiftState != .off else { return }
         self.page = page
         self.shiftState = .off
         rebuild()
@@ -90,9 +399,7 @@ public final class KeyboardView: UIView {
         let layout = KeyboardLayout.layout(for: page, shiftState: shiftState)
         for (rowIdx, row) in layout.enumerated() {
             let buttons = row.map { spec -> KeyButton in
-                let button = KeyButton(spec: spec)
-                button.onEvent = { [weak self] event in self?.onKey?(event) }
-                return button
+                KeyButton(spec: spec)
             }
             // English QWERTY row 2 is inset, but the Japanese romaji layout
             // keeps ten keys by adding the long-vowel/hyphen key at the right.
@@ -105,6 +412,8 @@ public final class KeyboardView: UIView {
             )
             rowsContainer.addArrangedSubview(rowView)
         }
+        hitMapNeedsRebuild = true
+        setNeedsLayout()
     }
 }
 
@@ -253,22 +562,13 @@ enum KeyboardLayout {
 
 final class KeyButton: UIControl {
     let spec: KeySpec
-    var onEvent: ((KeyboardView.KeyEvent) -> Void)?
     private let label = UILabel()
     private let normalColor: UIColor
     private let highlightedColor: UIColor
-    private let firesOnTouchDown: Bool
-    private var repeatTimer: Timer?
+    private static let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
 
     init(spec: KeySpec) {
         self.spec = spec
-        switch spec.event {
-        case .character, .space, .backspace:
-            self.firesOnTouchDown = true
-        default:
-            self.firesOnTouchDown = false
-        }
-
         let isLetterCap: Bool
         switch spec.event {
         case .character, .space: isLetterCap = true
@@ -315,24 +615,6 @@ final class KeyButton: UIControl {
             label.centerXAnchor.constraint(equalTo: centerXAnchor),
             label.centerYAnchor.constraint(equalTo: centerYAnchor),
         ])
-
-        // Character / backspace fire on touchDown for native latency feel.
-        // Modifier keys (return / shift / page-switch / globe) commit on
-        // touchUpInside so a tap can be cancelled by sliding off.
-        if firesOnTouchDown {
-            addTarget(self, action: #selector(fired), for: .touchDown)
-        } else {
-            addTarget(self, action: #selector(fired), for: .touchUpInside)
-        }
-
-        // Long-press repeat for backspace: native iOS waits ~400ms then
-        // deletes characters at ~10Hz.
-        if case .backspace = spec.event {
-            let longPress = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
-            longPress.minimumPressDuration = 0.4
-            longPress.cancelsTouchesInView = false
-            addGestureRecognizer(longPress)
-        }
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -343,25 +625,45 @@ final class KeyButton: UIControl {
         }
     }
 
-    @objc private func fired() {
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        onEvent?(spec.event)
+    fileprivate func setResolvedHighlighted(_ highlighted: Bool) {
+        isHighlighted = highlighted
     }
 
-    @objc private func handleLongPress(_ gr: UILongPressGestureRecognizer) {
-        switch gr.state {
-        case .began:
-            // Fire one immediately to feel responsive at the 400ms threshold,
-            // then auto-repeat at 10Hz.
-            onEvent?(.backspace)
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            repeatTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-                self?.onEvent?(.backspace)
-            }
-        case .ended, .cancelled, .failed:
-            repeatTimer?.invalidate()
-            repeatTimer = nil
-        default: break
+    fileprivate func playFeedback() {
+        UIDevice.current.playInputClick()
+        Self.feedbackGenerator.impactOccurred()
+        Self.feedbackGenerator.prepare()
+    }
+
+    fileprivate static func fmt(_ v: CGFloat) -> String {
+        String(format: "%.1f", Double(v))
+    }
+}
+
+private extension KeyboardView.KeyEvent {
+    var firesOnTouchBegin: Bool {
+        switch self {
+        case .character, .space, .backspace:
+            return true
+        case .returnKey, .shift, .switchPage, .nextKeyboard, .dismiss:
+            return false
         }
+    }
+}
+
+private extension CGRect {
+    var keyboardHitRect: KeyboardHitRect {
+        KeyboardHitRect(
+            x: Double(origin.x),
+            y: Double(origin.y),
+            width: Double(size.width),
+            height: Double(size.height)
+        )
+    }
+}
+
+private extension CGPoint {
+    var keyboardHitPoint: KeyboardHitPoint {
+        KeyboardHitPoint(x: Double(x), y: Double(y))
     }
 }
