@@ -42,6 +42,12 @@ public final class KanaKanjiAdapter {
         let start = DispatchTime.now().uptimeNanoseconds
         let results = converter.requestCandidates(composingText, options: .init(
             N_best: input.maxCandidates,
+            // We do romaji→kana conversion ourselves and pass the exact kana
+            // via `.direct` input style, so AzooKey's typo correction would
+            // re-introduce errors. In particular, AzooKey's direct-input
+            // typo table maps ト→ド, タ→ダ, テ→デ, etc., causing inputs like
+            // `to` to surface ど as the top candidate. Disable it.
+            needTypoCorrection: false,
             requireJapanesePrediction: false,
             requireEnglishPrediction: false,
             keyboardLanguage: .ja_JP,
@@ -58,9 +64,14 @@ public final class KanaKanjiAdapter {
             zenzaiMode: zenzaiMode,
             metadata: .init(versionString: "KeyboardCore/0.1")
         ))
+        let topCandidate = results.mainResults.first
         resultCandidates = Array(results.mainResults.prefix(input.maxCandidates).map(\.text))
         let end = DispatchTime.now().uptimeNanoseconds
         let requestLatencyMs = Double(end - start) / 1_000_000
+
+        let topScore: Double? = topCandidate.map { Double($0.value) }
+        let topRubyCount = topCandidate.map { max(1, $0.rubyCount) } ?? 1
+        let perMora: Double? = topScore.map { $0 / Double(topRubyCount) }
 
         return AdapterOutput(
             input: input,
@@ -69,7 +80,9 @@ public final class KanaKanjiAdapter {
             segments: [],
             coldStartMs: coldStartMs,
             requestLatencyMs: requestLatencyMs,
-            contextPassed: input.contextBefore
+            contextPassed: input.contextBefore,
+            topCandidateScore: topScore,
+            topCandidateScorePerMora: perMora
         )
     }
 }

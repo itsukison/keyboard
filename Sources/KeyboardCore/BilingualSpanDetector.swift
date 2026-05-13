@@ -20,8 +20,12 @@ public struct LanguagePrior: Equatable, Sendable {
 public struct BilingualSpanDetector: Sendable {
     public let englishWords: Set<String>
     private let embeddedEnglishWords: [String]
+    private let trigramScorer: TrigramScorer
 
-    public init(englishWords: Set<String> = BilingualSpanDetector.defaultEnglishWords) {
+    public init(
+        englishWords: Set<String> = BilingualSpanDetector.defaultEnglishWords,
+        trigramScorer: TrigramScorer = .shared
+    ) {
         self.englishWords = englishWords
         self.embeddedEnglishWords = englishWords
             .filter { $0.count >= 4 }
@@ -29,6 +33,7 @@ public struct BilingualSpanDetector: Sendable {
                 if lhs.count == rhs.count { return lhs < rhs }
                 return lhs.count > rhs.count
             }
+        self.trigramScorer = trigramScorer
     }
 
     public static let defaultEnglishWords: Set<String> = [
@@ -85,6 +90,12 @@ public struct BilingualSpanDetector: Sendable {
         // greetings / fillers
         "hello", "hi", "hey", "ok", "okay", "thanks", "thank", "please",
         "sorry", "yeah", "yep", "nope", "wow", "oh", "uh", "um",
+        // colloquial contractions (apostrophe-less forms commonly typed in chat)
+        "wanna", "gonna", "gotta", "kinda", "sorta", "lemme", "gimme", "dunno",
+        "imma", "tryna", "finna", "shoulda", "woulda", "coulda", "hafta",
+        "oughta", "betcha", "gotcha", "whatcha", "yall", "aint", "nah", "mhm",
+        "hmm", "huh", "omg", "lol", "lmao", "btw", "fyi", "idk", "tbh", "ngl",
+        "imo", "imho", "asap", "etc", "brb",
     ]
 
     private static let particles: Set<String> = [
@@ -230,6 +241,14 @@ public struct BilingualSpanDetector: Sendable {
     /// (proper nouns / sentence start / user emphasis) are kept whole — we don't
     /// look for embedded English inside, since uppercase is a strong English
     /// signal on its own.
+    ///
+    /// Structural invariant: within a single whitespace token we only split at
+    /// the boundary of a *known English dictionary word* of length ≥ 4. Pure
+    /// trigram-driven splits inside a word are forbidden — a single space-
+    /// delimited token is the user's unit of language intent, and forcing
+    /// internal mixing produces "type" → "ty" + "pe" → "tyぺ" type artefacts.
+    /// Whole-piece classification happens later in `score(piece:)`, where the
+    /// trigram model is just one feature among many.
     private func preSplit(_ word: String) -> [Piece] {
         if word.contains(where: { $0.isUppercase }) {
             return [Piece(raw: word, clean: word.lowercased(), explicitEnglish: false)]
@@ -296,6 +315,24 @@ public struct BilingualSpanDetector: Sendable {
             // Pre-split match in the embedded-English dictionary — definitively
             // English. Boost so smoothing can't flip it.
             en += 5.0
+        } else if clean.count >= 3 {
+            // Character-trigram log-prob feature. The raw diff sums log P over
+            // boundary-padded trigrams; we normalize per-character so short
+            // and long tokens contribute on the same scale. Positive →
+            // JA-like; negative → EN-like. Capped to keep one signal from
+            // overwhelming dictionary/cluster evidence. Skipped for ≤2-char
+            // tokens because a single unseen trigram is too noisy to trust
+            // against the existing kana/dict/prior rules.
+            let tri = trigramScorer.score(clean)
+            let denom = Double(max(1, clean.count + 2))
+            let perChar = tri.diff / denom
+            let weight = 0.9
+            let cap = 3.0
+            if perChar > 0 {
+                ja += min(cap, perChar * weight)
+            } else {
+                en += min(cap, -perChar * weight)
+            }
         }
 
         if isTimeSuffix(clean) {
@@ -523,7 +560,7 @@ public struct BilingualSpanDetector: Sendable {
             }
 
             var matched = false
-            for length in [3, 2, 1] where i + length <= chars.count {
+            for length in [4, 3, 2, 1] where i + length <= chars.count {
                 let piece = String(chars[i ..< i + length])
                 if let kana = Romaji.kanaTable[piece] {
                     output += kana

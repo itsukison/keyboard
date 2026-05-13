@@ -4,10 +4,42 @@ A custom iOS keyboard that lets a Japanese-English bilingual user type mixed rom
 
 ## Layers
 
-- **`index.html` / `app.js` / `styles.css`** — browser UX simulator for bilingual romaji detection, no-space mixed-run segmentation, and candidate UI.
-- **`Sources/KeyboardCore/`** — SwiftPM library: `BilingualSpanDetector`, `Romaji`, `KanaKanjiAdapter` (AzooKey wrapper with optional Zenzai), `InputController` (running left-side context, live conversion). Used by the harness *and* the iOS keyboard extension.
+- **`index.html` / `app.js` / `styles.css` / `trigrams-data.js`** — browser UX simulator for bilingual romaji detection, no-space mixed-run segmentation, and candidate UI. Shares the same trigram model file as the Swift library.
+- **`Sources/KeyboardCore/`** — SwiftPM library: `BilingualSpanDetector`, `BeamSegmenter`, `TrigramScorer`, `Romaji`, `KanaKanjiAdapter` (AzooKey wrapper with optional Zenzai), `InputController` (running left-side context, live conversion). The bundled `Resources/trigrams.json` is a character-trigram language model used by the segmenter.
 - **`Sources/KanaKanjiHarness/`** — CLI executable: validates `KeyboardCore` end-to-end and prints latency/candidate metrics.
+- **`Sources/TrigramProbe/`** — debugging executable: dumps trigram log-probs, beam decisions, and detector spans for ad-hoc inputs.
+- **`tools/build-trigrams/`** — `TrigramBuilder` executable. Reads `data/ja-romaji.txt` + `data/en-words.txt`, emits both `Sources/KeyboardCore/Resources/trigrams.json` and `trigrams-data.js`. Re-run with `swift run TrigramBuilder` when the seed corpora change.
 - **`iOS/`** — UIKit keyboard extension + container app (Swift sources only; the Xcode project is generated from `project.yml` via XcodeGen).
+
+## Language classifier (`BilingualSpanDetector`)
+
+The detector layers three signals on top of one structural invariant:
+
+**Structural invariant.** A single whitespace-delimited token represents one language. The only allowed internal split is at the boundary of a *known English dictionary word* of length ≥ 4 — the existing greedy `preSplit` scan. Pure trigram-driven splits inside a word are forbidden because they produce artefacts like `type → ty + pe → tyぺ`.
+
+**Per-piece classification.** Once `preSplit` returns a piece, `score(piece:)` combines:
+1. A character-trigram log-probability model (`TrigramScorer`) trained offline on a curated JA-romaji + EN seed corpus, scaled and added to the JA/EN running score. Skipped for tokens of length ≤ 2 where a single unseen trigram is too noisy.
+2. The legacy heuristics: kana parseability, impossible-in-JA consonant clusters (`str`, `spl`, `ght`, …), particles, loanword hints, English contractions, capitalization, etc.
+3. Neighbor smoothing in `smooth(tokens:)` — left/right 2-token window plus a document-level `LanguagePrior` for ambiguous tokens.
+
+**Long-run prior.** Runs of ≥ 8 lowercase chars with no embedded EN dictionary match are virtually always Japanese romaji (`hashiwowatarumaenitaberu`, `watashihaashitano…`); the existing `if clean.count >= 8 && !englishHit { ja += 1.7 }` rule encodes this.
+
+**Trigram corpus.** To extend the model, edit `tools/build-trigrams/data/*.txt` (one token per line, optional `\tweight` suffix) and re-run `swift run TrigramBuilder`. The output is ~75 KB and is bundled into the keyboard extension at compile time.
+
+## Romaji table (`Romaji.swift`)
+
+Covers the standard gojuuon + dakuten + handakuten + yoon rows plus Mozc/AzooKey-compatible extensions:
+- Small characters via `x-` / `l-` prefix: `xa`/`la` → ぁ, `xi`/`li` → ぃ, `xtu`/`ltu`/`xtsu`/`ltsu` → っ, `xya`/`lya` → ゃ, `xwa`/`lwa` → ゎ, `xka`/`lka` → ヵ, `xke`/`lke` → ヶ, `xn` → ん
+- v row: `va` → ゔぁ, `vu` → ゔ, `vya` → ゔゃ, etc.
+- Foreign-sound extensions: `tsa`/`tsi`/`tse`/`tso`, `tha`/`thi`/…/`tho`, `dha`/…/`dho`, `twa`/…/`two`, `dwa`/…/`dwo`, `she`/`che`/`je`, `sye`/`zye`/`jye`/`cye`
+- f / w / k / g / q extensions: `fwa`, `wha`, `kwa`, `gwa`, `qwa`, `kye`, `gye`, `wyi`, `wye`
+- -e yoon: `nye`, `hye`, `bye`, `pye`, `mye`, `rye`
+
+The matcher walks 4→3→2→1 chars per position so 4-char patterns like `xtsu` resolve correctly.
+
+## AzooKey typo correction
+
+`KanaKanjiAdapter` explicitly sets `needTypoCorrection: false` in `ConvertRequestOptions`. AzooKey's default direct-input typo table swaps dakuten pairs (ト ↔ ド, タ ↔ ダ, テ ↔ デ, …) which would re-introduce errors after our own romaji→kana conversion. Keep this disabled unless you start feeding raw `.roman2kana` keystrokes.
 
 ## Run the Browser Prototype
 

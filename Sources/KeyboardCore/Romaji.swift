@@ -29,6 +29,48 @@ public enum Romaji {
         "bya": "びゃ", "byu": "びゅ", "byo": "びょ",
         "pya": "ぴゃ", "pyu": "ぴゅ", "pyo": "ぴょ",
         "fa": "ふぁ", "fi": "ふぃ", "fe": "ふぇ", "fo": "ふぉ",
+
+        // --- Small characters via x- / l- prefix (Mozc / AzooKey convention) ---
+        "xa": "ぁ", "xi": "ぃ", "xu": "ぅ", "xe": "ぇ", "xo": "ぉ",
+        "la": "ぁ", "li": "ぃ", "lu": "ぅ", "le": "ぇ", "lo": "ぉ",
+        "xya": "ゃ", "xyu": "ゅ", "xyo": "ょ",
+        "lya": "ゃ", "lyu": "ゅ", "lyo": "ょ",
+        "xtu": "っ", "xtsu": "っ", "ltu": "っ", "ltsu": "っ",
+        "xwa": "ゎ", "lwa": "ゎ",
+        "xka": "ヵ", "xke": "ヶ", "lka": "ヵ", "lke": "ヶ",
+        "xn": "ん",
+
+        // --- v row (ヴ) ---
+        "va": "ゔぁ", "vi": "ゔぃ", "vu": "ゔ", "ve": "ゔぇ", "vo": "ゔぉ",
+        "vya": "ゔゃ", "vyu": "ゔゅ", "vyo": "ゔょ",
+
+        // --- Foreign-sound extensions: ts / th / dh / tw / dw / she / che / je ---
+        "tsa": "つぁ", "tsi": "つぃ", "tse": "つぇ", "tso": "つぉ",
+        "tha": "てゃ", "thi": "てぃ", "thu": "てゅ", "the": "てぇ", "tho": "てょ",
+        "dha": "でゃ", "dhi": "でぃ", "dhu": "でゅ", "dhe": "でぇ", "dho": "でょ",
+        "twa": "とぁ", "twi": "とぃ", "twu": "とぅ", "twe": "とぇ", "two": "とぉ",
+        "dwa": "どぁ", "dwi": "どぃ", "dwu": "どぅ", "dwe": "どぇ", "dwo": "どぉ",
+        "she": "しぇ", "che": "ちぇ", "je": "じぇ",
+        "sye": "しぇ", "zye": "じぇ", "jye": "じぇ", "cye": "ちぇ",
+
+        // --- f row extensions ---
+        "fya": "ふゃ", "fyu": "ふゅ", "fyo": "ふょ",
+        "fwa": "ふぁ", "fwi": "ふぃ", "fwu": "ふぅ", "fwe": "ふぇ", "fwo": "ふぉ",
+
+        // --- w row extensions ---
+        "wha": "うぁ", "whi": "うぃ", "whu": "う", "whe": "うぇ", "who": "うぉ",
+        "wyi": "ゐ", "wye": "ゑ",
+
+        // --- k / g / q extensions ---
+        "kwa": "くぁ", "kwi": "くぃ", "kwu": "くぅ", "kwe": "くぇ", "kwo": "くぉ",
+        "gwa": "ぐぁ", "gwi": "ぐぃ", "gwu": "ぐぅ", "gwe": "ぐぇ", "gwo": "ぐぉ",
+        "kye": "きぇ", "gye": "ぎぇ",
+        "qa": "くぁ", "qi": "くぃ", "qu": "く", "qe": "くぇ", "qo": "くぉ",
+        "qwa": "くぁ", "qwi": "くぃ", "qwu": "くぅ", "qwe": "くぇ", "qwo": "くぉ",
+
+        // --- Other -e yoon ---
+        "nye": "にぇ", "hye": "ひぇ", "bye": "びぇ", "pye": "ぴぇ",
+        "mye": "みぇ", "rye": "りぇ",
     ]
 
     static let consonants = Set("bcdfghjklmnpqrstvwxyz")
@@ -80,7 +122,7 @@ public enum Romaji {
             }
 
             var matched = false
-            for length in [3, 2, 1] where index + length <= chars.count {
+            for length in [4, 3, 2, 1] where index + length <= chars.count {
                 let piece = String(chars[index ..< index + length])
                 if let kana = kanaTable[piece] {
                     output += kana
