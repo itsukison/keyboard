@@ -15,10 +15,29 @@ enum KeyboardTouchDiagnostics {
 }
 
 enum KeyboardColors {
-    static let chromeBackground = UIColor(red: 0.81, green: 0.82, blue: 0.85, alpha: 1.0)
-    static let keyPressedBackground = UIColor(red: 0.74, green: 0.76, blue: 0.80, alpha: 1.0)
-    static let modifierBackground = UIColor(red: 0.68, green: 0.70, blue: 0.75, alpha: 1.0)
-    static let modifierPressedBackground = UIColor(red: 0.62, green: 0.64, blue: 0.69, alpha: 1.0)
+    static let chromeBackground = UIColor(red: 0.82, green: 0.83, blue: 0.86, alpha: 1.0)
+    static let keyPressedBackground = UIColor(red: 0.76, green: 0.78, blue: 0.82, alpha: 1.0)
+    static let modifierBackground = UIColor(red: 0.70, green: 0.72, blue: 0.77, alpha: 1.0)
+    static let modifierPressedBackground = UIColor(red: 0.64, green: 0.66, blue: 0.71, alpha: 1.0)
+    static let keyShadow = UIColor(white: 0.0, alpha: 1.0)
+    static let popupStroke = UIColor(white: 0.70, alpha: 0.70)
+}
+
+private enum KeyboardAppearance {
+    static let topInset: CGFloat = 4
+    static let bottomInset: CGFloat = 14
+    static let sideInset: CGFloat = 3
+    static let verticalSpacing: CGFloat = 11
+    static let keySpacing: CGFloat = 6
+    static let homeRowInset: CGFloat = 19
+    static let thirdRowModifierGap: CGFloat = 14
+    static let keyCornerRadius: CGFloat = 4.5
+    static let keyShadowOpacity: Float = 0.24
+    static let keyShadowOffset = CGSize(width: 0, height: 1)
+    static let letterFont = UIFont.systemFont(ofSize: 29, weight: .light)
+    static let wordFont = UIFont.systemFont(ofSize: 17, weight: .regular)
+    static let pageFont = UIFont.systemFont(ofSize: 20, weight: .regular)
+    static let symbolWeight = UIImage.SymbolWeight.regular
 }
 
 /// On-screen keyboard with three pages: QWERTY (letters), numbers, symbols.
@@ -61,17 +80,18 @@ public final class KeyboardView: UIView {
     public override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = KeyboardColors.chromeBackground
+        clipsToBounds = false
         rowsContainer = UIStackView()
         rowsContainer.axis = .vertical
         rowsContainer.distribution = .fillEqually
-        rowsContainer.spacing = 11
+        rowsContainer.spacing = KeyboardAppearance.verticalSpacing
         rowsContainer.translatesAutoresizingMaskIntoConstraints = false
         addSubview(rowsContainer)
         NSLayoutConstraint.activate([
-            rowsContainer.topAnchor.constraint(equalTo: topAnchor, constant: 6),
-            rowsContainer.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -5),
-            rowsContainer.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 3),
-            rowsContainer.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -3),
+            rowsContainer.topAnchor.constraint(equalTo: topAnchor, constant: KeyboardAppearance.topInset),
+            rowsContainer.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -KeyboardAppearance.bottomInset),
+            rowsContainer.leadingAnchor.constraint(equalTo: leadingAnchor, constant: KeyboardAppearance.sideInset),
+            rowsContainer.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -KeyboardAppearance.sideInset),
         ])
         rebuild()
     }
@@ -98,6 +118,8 @@ public final class KeyboardView: UIView {
     private var activeTouches: [ObjectIdentifier: ActiveTouch] = [:]
     private var backspaceRepeatTouchID: ObjectIdentifier?
     private var backspaceRepeatTimer: Timer?
+    private var activePopupTouchID: ObjectIdentifier?
+    private var keyPopup: KeyPopupView?
 
     /// Make the keyboard surface itself receive all touches in the key area.
     /// Visible `KeyButton` frames stay as caps; this view resolves every point
@@ -170,6 +192,7 @@ public final class KeyboardView: UIView {
                 continue
             }
             resolved.button.setResolvedHighlighted(true)
+            showPopup(for: resolved.button, touch: touch)
             let firesOnBegin = resolved.button.spec.event.firesOnTouchBegin
             activeTouches[id] = ActiveTouch(
                 button: resolved.button,
@@ -218,6 +241,9 @@ public final class KeyboardView: UIView {
         }
         if backspaceRepeatTouchID == id {
             stopBackspaceRepeat()
+        }
+        if activePopupTouchID == id {
+            hidePopup(animated: true)
         }
         active.button.setResolvedHighlighted(false)
         let resolved = ResolvedKey(button: active.button, resolution: active.resolution)
@@ -269,6 +295,66 @@ public final class KeyboardView: UIView {
         backspaceRepeatTimer?.invalidate()
         backspaceRepeatTimer = nil
         backspaceRepeatTouchID = nil
+    }
+
+    private func showPopup(for button: KeyButton, touch: UITouch) {
+        guard button.showsInputPopup else {
+            hidePopup(animated: false)
+            return
+        }
+
+        hidePopup(animated: false)
+
+        let keyFrame = button.convert(button.bounds, to: self)
+        let keyHeight = keyFrame.height
+        let unclampedWidth = max(max(keyFrame.width + 26, keyFrame.width * 1.74), 60)
+        let popupWidth = min(unclampedWidth, 80)
+        let horizontalInset: CGFloat = 3
+        let desiredX = keyFrame.midX - popupWidth / 2
+        let maxX = max(horizontalInset, bounds.width - popupWidth - horizontalInset)
+        let popupX = min(max(desiredX, horizontalInset), maxX)
+
+        let bubbleHeight = max(keyHeight + 18, 62)
+        let connectorHeight = max(min(keyHeight * 0.20, 9), 7)
+        let desiredY = keyFrame.minY - bubbleHeight - connectorHeight
+        let topLimit = superview.map { -convert(CGPoint.zero, to: $0).y } ?? -bounds.minY
+        let popupY = max(desiredY, topLimit)
+        let popupFrame = CGRect(
+            x: popupX,
+            y: popupY,
+            width: popupWidth,
+            height: keyFrame.maxY - popupY
+        )
+        let keyRect = CGRect(
+            x: keyFrame.minX - popupX,
+            y: keyFrame.minY - popupY,
+            width: keyFrame.width,
+            height: keyFrame.height
+        )
+
+        let popup = KeyPopupView(text: button.popupText)
+        popup.configure(keyRect: keyRect, bubbleHeight: min(bubbleHeight, max(42, keyRect.minY - 2)))
+        popup.frame = popupFrame
+        popup.alpha = 1
+        addSubview(popup)
+        keyPopup = popup
+        activePopupTouchID = ObjectIdentifier(touch)
+    }
+
+    private func hidePopup(animated: Bool) {
+        activePopupTouchID = nil
+        guard let popup = keyPopup else { return }
+        keyPopup = nil
+        popup.layer.removeAllAnimations()
+        if animated {
+            UIView.animate(withDuration: 0.07, delay: 0, options: [.beginFromCurrentState, .curveEaseOut]) {
+                popup.alpha = 0
+            } completion: { _ in
+                popup.removeFromSuperview()
+            }
+        } else {
+            popup.removeFromSuperview()
+        }
     }
 
     private func logTouch(phase: String, touch: UITouch, resolved: ResolvedKey?) {
@@ -392,6 +478,7 @@ public final class KeyboardView: UIView {
     }
 
     private func rebuild() {
+        hidePopup(animated: false)
         rowsContainer.arrangedSubviews.forEach {
             rowsContainer.removeArrangedSubview($0)
             $0.removeFromSuperview()
@@ -401,14 +488,21 @@ public final class KeyboardView: UIView {
             let buttons = row.map { spec -> KeyButton in
                 KeyButton(spec: spec)
             }
-            // English QWERTY row 2 is inset, but the Japanese romaji layout
-            // keeps ten keys by adding the long-vowel/hyphen key at the right.
+            let interKeySpacings: [CGFloat]?
+            if page == .letters && rowIdx == 2 {
+                interKeySpacings = [KeyboardAppearance.thirdRowModifierGap]
+                    + Array(repeating: KeyboardAppearance.keySpacing, count: max(0, row.count - 3))
+                    + [KeyboardAppearance.thirdRowModifierGap]
+            } else {
+                interKeySpacings = nil
+            }
             let needsInset = page == .letters && rowIdx == 1 && row.count == 9
             let rowView = KeyboardRow(
                 buttons: buttons,
-                spacing: 7,
-                leadingInset: needsInset ? 19 : 0,
-                trailingInset: needsInset ? 19 : 0
+                spacing: KeyboardAppearance.keySpacing,
+                interKeySpacings: interKeySpacings,
+                leadingInset: needsInset ? KeyboardAppearance.homeRowInset : 0,
+                trailingInset: needsInset ? KeyboardAppearance.homeRowInset : 0
             )
             rowsContainer.addArrangedSubview(rowView)
         }
@@ -422,12 +516,20 @@ public final class KeyboardView: UIView {
 final class KeyboardRow: UIView {
     private let buttons: [KeyButton]
     private let spacing: CGFloat
+    private let interKeySpacings: [CGFloat]?
     private let leadingInset: CGFloat
     private let trailingInset: CGFloat
 
-    init(buttons: [KeyButton], spacing: CGFloat, leadingInset: CGFloat, trailingInset: CGFloat) {
+    init(
+        buttons: [KeyButton],
+        spacing: CGFloat,
+        interKeySpacings: [CGFloat]? = nil,
+        leadingInset: CGFloat,
+        trailingInset: CGFloat
+    ) {
         self.buttons = buttons
         self.spacing = spacing
+        self.interKeySpacings = interKeySpacings
         self.leadingInset = leadingInset
         self.trailingInset = trailingInset
         super.init(frame: .zero)
@@ -440,7 +542,8 @@ final class KeyboardRow: UIView {
         super.layoutSubviews()
         guard !buttons.isEmpty else { return }
         let totalUnits = buttons.reduce(0) { $0 + $1.spec.widthFactor }
-        let totalSpacing = spacing * CGFloat(buttons.count - 1)
+        let gaps = normalizedGaps()
+        let totalSpacing = gaps.reduce(0, +)
         let available = bounds.width - leadingInset - trailingInset - totalSpacing
         let unit = available / totalUnits
 
@@ -459,8 +562,18 @@ final class KeyboardRow: UIView {
         var x = leadingInset
         for (idx, button) in buttons.enumerated() {
             button.frame = CGRect(x: x, y: 0, width: widths[idx], height: bounds.height)
-            x += widths[idx] + spacing
+            if idx < gaps.count {
+                x += widths[idx] + gaps[idx]
+            }
         }
+    }
+
+    private func normalizedGaps() -> [CGFloat] {
+        let gapCount = max(0, buttons.count - 1)
+        guard let interKeySpacings, interKeySpacings.count == gapCount else {
+            return Array(repeating: spacing, count: gapCount)
+        }
+        return interKeySpacings
     }
 }
 
@@ -497,26 +610,26 @@ enum KeyboardLayout {
         }
         let shiftLabel: String
         switch shiftState {
-        case .off: shiftLabel = "⇧"
-        case .shifted: shiftLabel = "⇧"
-        case .locked: shiftLabel = "⇪"
+        case .off: shiftLabel = "shift"
+        case .shifted: shiftLabel = "shift.fill"
+        case .locked: shiftLabel = "capslock.fill"
         }
         let shiftActive = shiftState != .off
 
         let row1 = "qwertyuiop"
-        let row2 = "asdfghjkl-"
+        let row2 = "asdfghjkl"
         let row3 = "zxcvbnm"
         return [
             row1.map { c in KeySpec(cased(c), .character(cased(c))) },
             row2.map { c in KeySpec(cased(c), .character(cased(c))) },
-            [KeySpec(shiftLabel, .shift, width: 1.4, isActive: shiftActive)]
+            [KeySpec(shiftLabel, .shift, width: 1.32, isActive: shiftActive)]
                 + row3.map { c in KeySpec(cased(c), .character(cased(c))) }
-                + [KeySpec("⌫", .backspace, width: 1.4)],
+                + [KeySpec("delete.left", .backspace, width: 1.32)],
             [
-                KeySpec("123", .switchPage(.numbers), width: 1.4),
-                KeySpec("🌐", .nextKeyboard, width: 1.0),
-                KeySpec("space", .space, width: 5.0),
-                KeySpec("return", .returnKey, width: 2.0),
+                KeySpec("123", .switchPage(.numbers), width: 1.0),
+                KeySpec("face.smiling", .nextKeyboard, width: 1.0),
+                KeySpec("space", .space, width: 4.4),
+                KeySpec("return", .returnKey, width: 2.15),
             ],
         ]
     }
@@ -528,14 +641,14 @@ enum KeyboardLayout {
         return [
             row1.map { c in KeySpec(String(c), .character(String(c))) },
             row2.map { c in KeySpec(String(c), .character(String(c))) },
-            [KeySpec("#+=", .switchPage(.symbols), width: 1.4)]
+            [KeySpec("#+=", .switchPage(.symbols), width: 1.32)]
                 + row3.map { c in KeySpec(String(c), .character(String(c))) }
-                + [KeySpec("⌫", .backspace, width: 1.4)],
+                + [KeySpec("delete.left", .backspace, width: 1.32)],
             [
-                KeySpec("ABC", .switchPage(.letters), width: 1.4),
-                KeySpec("🌐", .nextKeyboard, width: 1.0),
-                KeySpec("space", .space, width: 5.0),
-                KeySpec("return", .returnKey, width: 2.0),
+                KeySpec("ABC", .switchPage(.letters), width: 1.0),
+                KeySpec("face.smiling", .nextKeyboard, width: 1.0),
+                KeySpec("space", .space, width: 4.4),
+                KeySpec("return", .returnKey, width: 2.15),
             ],
         ]
     }
@@ -547,22 +660,127 @@ enum KeyboardLayout {
         return [
             row1.map { c in KeySpec(String(c), .character(String(c))) },
             row2.map { c in KeySpec(String(c), .character(String(c))) },
-            [KeySpec("123", .switchPage(.numbers), width: 1.4)]
+            [KeySpec("123", .switchPage(.numbers), width: 1.32)]
                 + row3.map { c in KeySpec(String(c), .character(String(c))) }
-                + [KeySpec("⌫", .backspace, width: 1.4)],
+                + [KeySpec("delete.left", .backspace, width: 1.32)],
             [
-                KeySpec("ABC", .switchPage(.letters), width: 1.4),
-                KeySpec("🌐", .nextKeyboard, width: 1.0),
-                KeySpec("space", .space, width: 5.0),
-                KeySpec("return", .returnKey, width: 2.0),
+                KeySpec("ABC", .switchPage(.letters), width: 1.0),
+                KeySpec("face.smiling", .nextKeyboard, width: 1.0),
+                KeySpec("space", .space, width: 4.4),
+                KeySpec("return", .returnKey, width: 2.15),
             ],
         ]
+    }
+}
+
+final class KeyPopupView: UIView {
+    private let shapeLayer = CAShapeLayer()
+    private let label = UILabel()
+    private var keyRect: CGRect = .zero
+    private var bubbleHeight: CGFloat = 56
+
+    init(text: String) {
+        super.init(frame: .zero)
+        backgroundColor = .clear
+        isUserInteractionEnabled = false
+        clipsToBounds = false
+
+        layer.shadowColor = UIColor.black.cgColor
+        layer.shadowOpacity = 0.13
+        layer.shadowOffset = CGSize(width: 0, height: 1)
+        layer.shadowRadius = 1.25
+
+        shapeLayer.fillColor = UIColor.white.cgColor
+        shapeLayer.strokeColor = KeyboardColors.popupStroke.cgColor
+        shapeLayer.lineWidth = 0.5
+        layer.addSublayer(shapeLayer)
+
+        label.text = text
+        label.textAlignment = .center
+        label.textColor = .black
+        label.font = .systemFont(ofSize: 46, weight: .light)
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.7
+        addSubview(label)
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    func configure(keyRect: CGRect, bubbleHeight: CGFloat) {
+        self.keyRect = keyRect
+        self.bubbleHeight = bubbleHeight
+        setNeedsLayout()
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let bubbleRect = CGRect(x: 0, y: 0, width: bounds.width, height: bubbleHeight)
+        shapeLayer.frame = bounds
+        shapeLayer.path = calloutPath(bubbleRect: bubbleRect, keyRect: keyRect).cgPath
+        shapeLayer.shadowPath = shapeLayer.path
+        label.frame = bubbleRect.insetBy(dx: 6, dy: 1)
+    }
+
+    private func calloutPath(bubbleRect: CGRect, keyRect: CGRect) -> UIBezierPath {
+        let path = UIBezierPath()
+        let bubbleRadius = min(14, bubbleRect.height / 4)
+        let keyRadius = min(KeyboardAppearance.keyCornerRadius, keyRect.height / 4)
+        let bubbleBottom = bubbleRect.maxY
+        let connectorTopY = bubbleBottom - bubbleRadius * 0.06
+        let keyTopY = keyRect.minY + keyRadius
+
+        path.move(to: CGPoint(x: bubbleRect.minX + bubbleRadius, y: bubbleRect.minY))
+        path.addLine(to: CGPoint(x: bubbleRect.maxX - bubbleRadius, y: bubbleRect.minY))
+        path.addQuadCurve(
+            to: CGPoint(x: bubbleRect.maxX, y: bubbleRect.minY + bubbleRadius),
+            controlPoint: CGPoint(x: bubbleRect.maxX, y: bubbleRect.minY)
+        )
+        path.addLine(to: CGPoint(x: bubbleRect.maxX, y: bubbleBottom - bubbleRadius))
+        path.addCurve(
+            to: CGPoint(x: bubbleRect.maxX - bubbleRadius, y: connectorTopY),
+            controlPoint1: CGPoint(x: bubbleRect.maxX, y: bubbleBottom - 2),
+            controlPoint2: CGPoint(x: bubbleRect.maxX - 2, y: connectorTopY)
+        )
+        path.addCurve(
+            to: CGPoint(x: keyRect.maxX, y: keyTopY),
+            controlPoint1: CGPoint(x: bubbleRect.maxX - bubbleRadius - 1, y: bubbleBottom + 15),
+            controlPoint2: CGPoint(x: keyRect.maxX, y: keyRect.minY - 7)
+        )
+        path.addLine(to: CGPoint(x: keyRect.maxX, y: keyRect.maxY - keyRadius))
+        path.addQuadCurve(
+            to: CGPoint(x: keyRect.maxX - keyRadius, y: keyRect.maxY),
+            controlPoint: CGPoint(x: keyRect.maxX, y: keyRect.maxY)
+        )
+        path.addLine(to: CGPoint(x: keyRect.minX + keyRadius, y: keyRect.maxY))
+        path.addQuadCurve(
+            to: CGPoint(x: keyRect.minX, y: keyRect.maxY - keyRadius),
+            controlPoint: CGPoint(x: keyRect.minX, y: keyRect.maxY)
+        )
+        path.addLine(to: CGPoint(x: keyRect.minX, y: keyTopY))
+        path.addCurve(
+            to: CGPoint(x: bubbleRect.minX + bubbleRadius, y: connectorTopY),
+            controlPoint1: CGPoint(x: keyRect.minX, y: keyRect.minY - 7),
+            controlPoint2: CGPoint(x: bubbleRect.minX + bubbleRadius + 1, y: bubbleBottom + 15)
+        )
+        path.addCurve(
+            to: CGPoint(x: bubbleRect.minX, y: bubbleBottom - bubbleRadius),
+            controlPoint1: CGPoint(x: bubbleRect.minX + 2, y: connectorTopY),
+            controlPoint2: CGPoint(x: bubbleRect.minX, y: bubbleBottom - 2)
+        )
+        path.addLine(to: CGPoint(x: bubbleRect.minX, y: bubbleRect.minY + bubbleRadius))
+        path.addQuadCurve(
+            to: CGPoint(x: bubbleRect.minX + bubbleRadius, y: bubbleRect.minY),
+            controlPoint: CGPoint(x: bubbleRect.minX, y: bubbleRect.minY)
+        )
+        path.close()
+        return path
     }
 }
 
 final class KeyButton: UIControl {
     let spec: KeySpec
     private let label = UILabel()
+    private let symbolView = UIImageView()
     private let normalColor: UIColor
     private let highlightedColor: UIColor
     private static let feedbackGenerator = UIImpactFeedbackGenerator(style: .light)
@@ -592,28 +810,41 @@ final class KeyButton: UIControl {
 
         super.init(frame: .zero)
         backgroundColor = normalColor
-        layer.cornerRadius = 4.5
+        layer.cornerRadius = KeyboardAppearance.keyCornerRadius
         layer.cornerCurve = .continuous
-        layer.shadowColor = UIColor.black.cgColor
-        layer.shadowOpacity = 0.28
-        layer.shadowOffset = CGSize(width: 0, height: 1)
+        layer.shadowColor = KeyboardColors.keyShadow.cgColor
+        layer.shadowOpacity = KeyboardAppearance.keyShadowOpacity
+        layer.shadowOffset = KeyboardAppearance.keyShadowOffset
         layer.shadowRadius = 0
 
-        // Single typed characters (letters, digits, punctuation) render at 26pt
-        // for a native-keyboard look. Modifier glyphs (⇧/⇪/⌫/🌐) and word
-        // labels (space, return, 123, ABC, #+=) render at 16pt.
-        let glyphModifiers: Set<String> = ["⇧", "⇪", "⌫", "🌐"]
-        let useLargeFont = spec.label.count == 1 && !glyphModifiers.contains(spec.label)
         label.text = spec.label
         label.textAlignment = .center
-        label.font = .systemFont(ofSize: useLargeFont ? 26 : 16, weight: .regular)
+        label.font = Self.font(for: spec)
         label.textColor = .black
         label.translatesAutoresizingMaskIntoConstraints = false
         label.isUserInteractionEnabled = false
         addSubview(label)
+
+        symbolView.contentMode = .scaleAspectFit
+        symbolView.tintColor = .black
+        symbolView.translatesAutoresizingMaskIntoConstraints = false
+        symbolView.isUserInteractionEnabled = false
+        addSubview(symbolView)
+
+        if let image = Self.symbolImage(for: spec) {
+            label.isHidden = true
+            symbolView.image = image
+        } else {
+            symbolView.isHidden = true
+        }
+
         NSLayoutConstraint.activate([
             label.centerXAnchor.constraint(equalTo: centerXAnchor),
             label.centerYAnchor.constraint(equalTo: centerYAnchor),
+            symbolView.centerXAnchor.constraint(equalTo: centerXAnchor),
+            symbolView.centerYAnchor.constraint(equalTo: centerYAnchor),
+            symbolView.widthAnchor.constraint(lessThanOrEqualTo: widthAnchor, multiplier: 0.62),
+            symbolView.heightAnchor.constraint(lessThanOrEqualTo: heightAnchor, multiplier: 0.62),
         ])
     }
 
@@ -635,8 +866,54 @@ final class KeyButton: UIControl {
         Self.feedbackGenerator.prepare()
     }
 
+    fileprivate var showsInputPopup: Bool {
+        if case .character = spec.event { return true }
+        return false
+    }
+
+    fileprivate var popupText: String {
+        label.text ?? spec.label
+    }
+
     fileprivate static func fmt(_ v: CGFloat) -> String {
         String(format: "%.1f", Double(v))
+    }
+
+    private static func font(for spec: KeySpec) -> UIFont {
+        switch spec.event {
+        case .character:
+            return spec.label.count == 1 ? KeyboardAppearance.letterFont : KeyboardAppearance.wordFont
+        case .space, .returnKey:
+            return KeyboardAppearance.wordFont
+        case .switchPage:
+            return KeyboardAppearance.pageFont
+        case .backspace, .shift, .nextKeyboard, .dismiss:
+            return KeyboardAppearance.wordFont
+        }
+    }
+
+    private static func symbolImage(for spec: KeySpec) -> UIImage? {
+        let pointSize: CGFloat
+        let symbolName: String
+        switch spec.event {
+        case .shift:
+            symbolName = spec.label
+            pointSize = 26
+        case .backspace:
+            symbolName = spec.label
+            pointSize = 25
+        case .nextKeyboard:
+            symbolName = spec.label
+            pointSize = 23
+        case .character, .space, .returnKey, .switchPage, .dismiss:
+            return nil
+        }
+        let config = UIImage.SymbolConfiguration(
+            pointSize: pointSize,
+            weight: KeyboardAppearance.symbolWeight,
+            scale: .default
+        )
+        return UIImage(systemName: symbolName, withConfiguration: config)
     }
 }
 

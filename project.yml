@@ -22,6 +22,9 @@ settings:
 packages:
   KeyboardCore:
     path: .
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    from: 1.18.4
 
 targets:
   BilingualKeyboard:
@@ -58,12 +61,32 @@ targets:
       - package: KeyboardCore
         product: KeyboardCore
 
+  BilingualKeyboardSnapshotTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: iOS/ContainerTests
+    resources:
+      - path: public/home.png
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.bilingualkeyboard.snapshot-tests
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: BilingualKeyboard
+      - package: SnapshotTesting
+        product: SnapshotTesting
+
 schemes:
   BilingualKeyboard:
     build:
       targets:
         BilingualKeyboard: all
         KeyboardExtension: all
+    test:
+      targets:
+        - BilingualKeyboardSnapshotTests
   KeyboardExtension:
     build:
       targets:

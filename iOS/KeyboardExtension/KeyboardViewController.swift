@@ -137,6 +137,8 @@ public final class KeyboardViewController: UIInputViewController {
     // MARK: - View setup
 
     private func setupViews() {
+        view.clipsToBounds = false
+
         candidateBar = CandidateBar(frame: .zero)
         candidateBar.translatesAutoresizingMaskIntoConstraints = false
         candidateBar.onSelect = { [weak self] candidate in
@@ -146,6 +148,7 @@ public final class KeyboardViewController: UIInputViewController {
 
         keyboardView = KeyboardView(frame: .zero)
         keyboardView.translatesAutoresizingMaskIntoConstraints = false
+        keyboardView.clipsToBounds = false
         keyboardView.onKey = { [weak self] event in
             self?.handle(event)
         }

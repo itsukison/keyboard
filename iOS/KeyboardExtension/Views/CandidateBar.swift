@@ -12,6 +12,7 @@ public final class CandidateBar: UIView {
 
     private let scroll = UIScrollView()
     private let stack = UIStackView()
+    private let bottomSeparator = UIView()
     private var displayedCandidates: [String] = []
     private var displayedPreview: String = ""
 
@@ -19,13 +20,18 @@ public final class CandidateBar: UIView {
         super.init(frame: frame)
         backgroundColor = KeyboardColors.chromeBackground
 
+        bottomSeparator.backgroundColor = UIColor(white: 0.58, alpha: 0.28)
+        bottomSeparator.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(bottomSeparator)
+
         scroll.translatesAutoresizingMaskIntoConstraints = false
         scroll.showsHorizontalScrollIndicator = false
+        scroll.alwaysBounceHorizontal = false
         addSubview(scroll)
 
         stack.axis = .horizontal
-        stack.alignment = .center
-        stack.spacing = 27
+        stack.alignment = .fill
+        stack.spacing = 0
         stack.translatesAutoresizingMaskIntoConstraints = false
         scroll.addSubview(stack)
 
@@ -40,6 +46,11 @@ public final class CandidateBar: UIView {
             stack.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor),
             stack.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor),
             stack.heightAnchor.constraint(equalTo: scroll.frameLayoutGuide.heightAnchor),
+
+            bottomSeparator.leadingAnchor.constraint(equalTo: leadingAnchor),
+            bottomSeparator.trailingAnchor.constraint(equalTo: trailingAnchor),
+            bottomSeparator.bottomAnchor.constraint(equalTo: bottomAnchor),
+            bottomSeparator.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale),
         ])
     }
 
@@ -58,25 +69,20 @@ public final class CandidateBar: UIView {
         for (idx, candidate) in candidates.enumerated() {
             let isDefault = idx == 0
             let button = UIButton(type: .system)
-            button.backgroundColor = isDefault ? .white : .clear
-            button.layer.cornerRadius = isDefault ? 4.5 : 0
-            button.layer.cornerCurve = .continuous
-            button.contentEdgeInsets = UIEdgeInsets(
-                top: 8,
-                left: isDefault ? 13 : 2,
-                bottom: 8,
-                right: isDefault ? 13 : 2
+            button.backgroundColor = .clear
+            var title = AttributedString(candidate)
+            title.font = UIFont.systemFont(ofSize: 20, weight: .regular)
+            title.foregroundColor = UIColor.black
+            var configuration = UIButton.Configuration.plain()
+            configuration.attributedTitle = title
+            configuration.baseForegroundColor = .black
+            configuration.contentInsets = NSDirectionalEdgeInsets(
+                top: 6,
+                leading: 18,
+                bottom: 7,
+                trailing: 18
             )
-            button.setAttributedTitle(
-                NSAttributedString(
-                    string: candidate,
-                    attributes: [
-                        .font: UIFont.systemFont(ofSize: 22, weight: .regular),
-                        .foregroundColor: UIColor.black,
-                    ]
-                ),
-                for: .normal
-            )
+            button.configuration = configuration
             if isDefault {
                 button.accessibilityTraits.insert(.selected)
             }
@@ -88,6 +94,14 @@ public final class CandidateBar: UIView {
                 self?.onSelect?(candidate)
             }, for: .touchUpInside)
             stack.addArrangedSubview(button)
+
+            if idx < candidates.count - 1 {
+                let separator = UIView()
+                separator.backgroundColor = UIColor(white: 0.55, alpha: 0.28)
+                separator.translatesAutoresizingMaskIntoConstraints = false
+                separator.widthAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale).isActive = true
+                stack.addArrangedSubview(separator)
+            }
         }
     }
 }
