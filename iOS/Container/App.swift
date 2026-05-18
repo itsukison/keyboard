@@ -4,7 +4,7 @@ import SwiftUI
 struct BilingualKeyboardApp: App {
     var body: some Scene {
         WindowGroup {
-            RootContainerView()
+            RootContainerView(showsOnboardingOnLaunch: true)
         }
     }
 }

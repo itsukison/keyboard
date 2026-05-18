@@ -121,7 +121,7 @@ open BilingualKeyboard.xcodeproj
 In Xcode:
 1. Select the `BilingualKeyboard` target → **Signing & Capabilities** → set your team. Repeat for the `KeyboardExtension` target.
 2. Build & run on simulator or device.
-3. On device/simulator: **Settings → General → Keyboard → Keyboards → Add New Keyboard…** → **Bilingual Keyboard**.
+3. On device/simulator: **Settings → General → Keyboard → Keyboards → Add New Keyboard…** → **Bikey**.
 4. In any text field, tap the 🌐 globe icon to switch to it.
 
 ### Known limitations / TODOs

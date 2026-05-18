@@ -141,4 +141,30 @@ final class RomajiTableTests: XCTestCase {
         XCTAssertEqual(Romaji.toKana("nko"), "んこ")
         XCTAssertEqual(Romaji.toKana("nya"), "にゃ")
     }
+
+    // MARK: - Live composition
+
+    func testLiveKanaConvertsSingleVowelImmediately() {
+        XCTAssertEqual(Romaji.toLiveKana("a"), "あ")
+    }
+
+    func testLiveKanaKeepsIncompleteTrailingConsonant() {
+        XCTAssertEqual(Romaji.toLiveKana("k"), "k")
+        XCTAssertEqual(Romaji.toLiveKana("ky"), "ky")
+        XCTAssertEqual(Romaji.toLiveKana("ka"), "か")
+        XCTAssertEqual(Romaji.toLiveKana("kyo"), "きょ")
+    }
+
+    func testLiveKanaConvertsCommonJapanesePhrase() {
+        XCTAssertEqual(Romaji.toLiveKana("gohan"), "ごはん")
+    }
+
+    func testLiveKanaShowsInvalidFragmentsInsideKanaRun() {
+        XCTAssertEqual(Romaji.toLiveKana("dokotde"), "どこtで")
+    }
+
+    func testLiveKanaBackspaceFriendlyIntermediateState() {
+        XCTAssertEqual(Romaji.toLiveKana("ka"), "か")
+        XCTAssertEqual(Romaji.toLiveKana("k"), "k")
+    }
 }

@@ -1,16 +1,16 @@
 name: BilingualKeyboard
 options:
-  bundleIdPrefix: com.example.bilingualkeyboard
+  bundleIdPrefix: com.core7.bikey
   deploymentTarget:
-    iOS: "16.0"
+    iOS: "16.4"
   developmentLanguage: en
   createIntermediateGroups: true
 
 settings:
   base:
     SWIFT_VERSION: "6.1"
-    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
-    DEVELOPMENT_TEAM: ""        # set in Xcode → Signing & Capabilities
+    IPHONEOS_DEPLOYMENT_TARGET: "16.4"
+    DEVELOPMENT_TEAM: "4KS6YS23KT"
     CODE_SIGN_STYLE: Automatic
     # KeyboardCore consumes AzooKey + SwiftyMarisa (C++) under the Zenzai trait,
     # so Xcode targets that link KeyboardCore need C++ interop enabled.
@@ -22,6 +22,9 @@ settings:
 packages:
   KeyboardCore:
     path: .
+  KeyboardKit:
+    url: https://github.com/KeyboardKit/KeyboardKit.git
+    from: 10.4.1
   SnapshotTesting:
     url: https://github.com/pointfreeco/swift-snapshot-testing
     from: 1.18.4
@@ -35,15 +38,23 @@ targets:
         excludes:
           - Resources/Info.plist
       - path: public/bg.png
+      - path: public/background.png
+      - path: public/onboardbg.png
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.bilingualkeyboard
+        PRODUCT_BUNDLE_IDENTIFIER: com.core7.bikey
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_FILE: iOS/Container/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: iOS/Container/Container.entitlements
         TARGETED_DEVICE_FAMILY: "1,2"
     dependencies:
       - target: KeyboardExtension
+      # The keyboard extension loads package-provided dynamic frameworks via
+      # @executable_path/../../Frameworks, so the containing app must embed them.
       - package: KeyboardCore
         product: KeyboardCore
+      - package: KeyboardKit
+        product: KeyboardKit
 
   KeyboardExtension:
     type: app-extension
@@ -54,12 +65,16 @@ targets:
           - Resources/Info.plist
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.bilingualkeyboard.KeyboardExtension
+        PRODUCT_BUNDLE_IDENTIFIER: com.core7.bikey.KeyboardExtension
         PRODUCT_MODULE_NAME: KeyboardExtension
         INFOPLIST_FILE: iOS/KeyboardExtension/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: iOS/KeyboardExtension/KeyboardExtension.entitlements
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../../Frameworks"
     dependencies:
       - package: KeyboardCore
-        product: KeyboardCore
+        product: EnglishKeyboardCore
+      - package: KeyboardKit
+        product: KeyboardKit
 
   BilingualKeyboardSnapshotTests:
     type: bundle.unit-test
@@ -70,7 +85,7 @@ targets:
       - path: public/home.png
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.bilingualkeyboard.snapshot-tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.core7.bikey.snapshot-tests
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: YES
     dependencies:

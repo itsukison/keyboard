@@ -59,6 +59,32 @@ final class ExpectedEditTrackerTests: XCTestCase {
         XCTAssertEqual(tracker.consume(before: before, after: after), .matched(hasMoreEdits: false))
     }
 
+    func testConsumesFirstLogicalEditWithoutObservingState() {
+        var tracker = ExpectedEditTracker()
+        tracker.record(.insert("a"))
+        tracker.record(.insert("b"))
+
+        XCTAssertEqual(
+            tracker.consumeFirstLogicalEditWithoutObservingState(),
+            .matched(hasMoreEdits: true)
+        )
+        XCTAssertEqual(
+            tracker.consumeFirstLogicalEditWithoutObservingState(),
+            .matched(hasMoreEdits: false)
+        )
+        XCTAssertEqual(tracker.consumeFirstLogicalEditWithoutObservingState(), .noMatch)
+    }
+
+    func testFastLogicalConsumptionDoesNotConsumeObservedEdits() {
+        var tracker = ExpectedEditTracker()
+        let before = ObservedTextState(left: "a", center: "", right: "")
+        let after = ObservedTextState(left: "ab", center: "", right: "")
+        tracker.record(before: before, after: after)
+
+        XCTAssertEqual(tracker.consumeFirstLogicalEditWithoutObservingState(), .noMatch)
+        XCTAssertEqual(tracker.consume(before: before, after: after), .matched(hasMoreEdits: false))
+    }
+
     func testConsumesRepeatedFastLogicalInserts() {
         var tracker = ExpectedEditTracker(maxStoredEdits: 128)
         let before = ObservedTextState(left: "", center: "", right: "")

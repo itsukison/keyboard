@@ -91,6 +91,15 @@ public struct ExpectedEditTracker: Sendable {
         return .noMatch
     }
 
+    public mutating func consumeFirstLogicalEditWithoutObservingState() -> Consumption {
+        guard let first = expectedEdits.first,
+              case .logical = first.kind else {
+            return .noMatch
+        }
+        expectedEdits.removeFirst()
+        return .matched(hasMoreEdits: !expectedEdits.isEmpty)
+    }
+
     private func firstPendingEditCanStart(from state: ObservedTextState) -> Bool {
         guard let first = expectedEdits.first else { return false }
         return apply(first, to: state) != nil

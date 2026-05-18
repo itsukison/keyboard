@@ -21,22 +21,47 @@ struct HomeScreen: View {
     let scale: CGFloat
     let horizontalInset: CGFloat
 
+    private let recentItems: [RecentConversion] = [
+        .init(
+            dayLabel: "Today",
+            sourceText: "kyouno meeting ha 3ji",
+            convertedText: "今日の meeting は 3時",
+            timeText: "4:15 p.m."
+        ),
+        .init(
+            dayLabel: "Today",
+            sourceText: "korekara we can go",
+            convertedText: "これから we can go",
+            timeText: "2:40 p.m."
+        )
+    ]
+
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 0) {
                 HeaderView(scale: scale)
-                    .padding(.top, 36 * scale)
+                    .padding(.top, 34 * scale)
+
+                KeyboardEnabledBanner(scale: scale)
+                    .padding(.top, 26 * scale)
 
                 HeroCard(scale: scale)
-                    .padding(.top, 45 * scale)
-
-                ExamplesHeader(scale: scale)
-                    .padding(.top, 64 * scale)
-
-                ExampleCard(scale: scale)
                     .padding(.top, 22 * scale)
 
-                Spacer(minLength: 188 * scale)
+                PageDots(scale: scale)
+                    .padding(.top, 18 * scale)
+
+                RecentHeader(scale: scale)
+                    .padding(.top, 30 * scale)
+
+                VStack(spacing: 20 * scale) {
+                    ForEach(recentItems) { item in
+                        RecentConversionCard(item: item, scale: scale)
+                    }
+                }
+                .padding(.top, 18 * scale)
+
+                Spacer(minLength: 178 * scale)
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, horizontalInset)
@@ -52,12 +77,12 @@ private struct HeaderView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 0) {
-            HStack(spacing: 22 * scale) {
+            HStack(spacing: 14 * scale) {
                 IconTile(systemName: "globe", scale: scale)
-                    .frame(width: 72 * scale, height: 72 * scale)
+                    .frame(width: 56 * scale, height: 56 * scale)
 
                 Text("Bikey")
-                    .font(.system(size: 50 * scale, weight: .regular, design: .rounded))
+                    .font(.system(size: 34 * scale, weight: .regular, design: .rounded))
                     .foregroundStyle(AppColor.ink)
                     .minimumScaleFactor(0.8)
             }
@@ -65,13 +90,13 @@ private struct HeaderView: View {
             Spacer(minLength: 16 * scale)
 
             StatsPill(scale: scale)
-                .frame(width: 308 * scale, height: 88 * scale)
+                .frame(width: 248 * scale, height: 86 * scale)
 
             PowerToggle(scale: scale)
-                .frame(width: 100 * scale, height: 62 * scale)
-                .padding(.leading, 22 * scale)
+                .frame(width: 94 * scale, height: 58 * scale)
+                .padding(.leading, 14 * scale)
         }
-        .frame(height: 92 * scale)
+        .frame(height: 88 * scale)
     }
 }
 
@@ -81,11 +106,11 @@ private struct IconTile: View {
 
     var body: some View {
         RoundedRectangle(cornerRadius: 18 * scale, style: .continuous)
-            .fill(Color.white.opacity(0.78))
-            .shadow(color: .black.opacity(0.09), radius: 16 * scale, x: 0, y: 8 * scale)
+            .fill(Color.white.opacity(0.9))
+            .shadow(color: .black.opacity(0.05), radius: 12 * scale, x: 0, y: 6 * scale)
             .overlay {
                 Image(systemName: systemName)
-                    .font(.system(size: 38 * scale, weight: .regular))
+                    .font(.system(size: 30 * scale, weight: .regular))
                     .foregroundStyle(AppColor.purple.opacity(0.72))
             }
     }
@@ -96,12 +121,12 @@ private struct StatsPill: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            MetricColumn(value: "32,345", label: "words", scale: scale)
+            MetricColumn(value: "12,480", label: "conversions", scale: scale)
                 .frame(maxWidth: .infinity)
 
             Rectangle()
                 .fill(AppColor.rule.opacity(0.62))
-                .frame(width: max(1, 1 * scale), height: 42 * scale)
+                .frame(width: max(1, 1 * scale), height: 36 * scale)
 
             MetricColumn(value: "8", label: "day streak", scale: scale)
                 .frame(maxWidth: .infinity)
@@ -120,13 +145,13 @@ private struct MetricColumn: View {
     var body: some View {
         VStack(spacing: 1 * scale) {
             Text(value)
-                .font(.system(size: 27 * scale, weight: .regular, design: .rounded))
+                .font(.system(size: 26 * scale, weight: .medium, design: .rounded))
                 .foregroundStyle(AppColor.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
 
             Text(label)
-                .font(.system(size: 20 * scale, weight: .regular, design: .rounded))
+                .font(.system(size: 18 * scale, weight: .regular, design: .rounded))
                 .foregroundStyle(Color(red: 0.554, green: 0.548, blue: 0.604))
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
@@ -149,10 +174,36 @@ private struct PowerToggle: View {
             .overlay(alignment: .trailing) {
                 Circle()
                     .fill(.white)
-                    .frame(width: 48 * scale, height: 48 * scale)
+                    .frame(width: 44 * scale, height: 44 * scale)
                     .padding(.trailing, 7 * scale)
                     .shadow(color: .black.opacity(0.08), radius: 5 * scale, x: 0, y: 2 * scale)
             }
+    }
+}
+
+private struct KeyboardEnabledBanner: View {
+    let scale: CGFloat
+
+    var body: some View {
+        HStack(spacing: 18 * scale) {
+            RoundedRectangle(cornerRadius: 12 * scale, style: .continuous)
+                .fill(AppColor.paleLavender)
+                .frame(width: 44 * scale, height: 44 * scale)
+                .overlay {
+                    Image(systemName: "keyboard")
+                        .font(.system(size: 20 * scale, weight: .regular))
+                        .foregroundStyle(AppColor.purple.opacity(0.76))
+                }
+
+            Text("Bikey keyboard enabled")
+                .font(.system(size: 29 * scale, weight: .regular, design: .rounded))
+                .foregroundStyle(AppColor.ink.opacity(0.9))
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 26 * scale)
+        .frame(height: 86 * scale)
+        .background(AppColor.paleLavender.opacity(0.72), in: RoundedRectangle(cornerRadius: 30 * scale, style: .continuous))
     }
 }
 
@@ -160,16 +211,93 @@ private struct HeroCard: View {
     let scale: CGFloat
 
     var body: some View {
-        VStack(spacing: 0) {
-            HeroVisualArea(scale: scale)
-                .frame(height: 460 * scale)
+        ZStack {
+            HeroBackgroundImage()
+                .scaleEffect(1.12)
+                .overlay(Color.white.opacity(0.30))
 
-            HeroTextArea(scale: scale)
-                .frame(height: 395 * scale)
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 14 * scale) {
+                        Text("Type naturally in\ntwo languages")
+                            .font(.system(size: 62 * scale, weight: .regular, design: .rounded))
+                            .foregroundStyle(AppColor.ink.opacity(0.94))
+                            .lineSpacing(4 * scale)
+
+                        Text("Japanese + English, no\nkeyboard switching.")
+                            .font(.system(size: 33 * scale, weight: .regular, design: .rounded))
+                            .foregroundStyle(AppColor.muted)
+                            .lineSpacing(8 * scale)
+                    }
+
+                    Spacer(minLength: 0)
+                }
+
+                Spacer(minLength: 0)
+
+                HStack(alignment: .center, spacing: 24 * scale) {
+                    ConversionPreviewPill(scale: scale)
+                        .frame(height: 150 * scale)
+
+                    Spacer(minLength: 0)
+
+                    Text("Try demo")
+                        .font(.system(size: 34 * scale, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white)
+                        .frame(width: 200 * scale, height: 86 * scale)
+                        .background(Color(red: 0.151, green: 0.152, blue: 0.187), in: Capsule())
+                }
+            }
+            .padding(.horizontal, 48 * scale)
+            .padding(.vertical, 44 * scale)
         }
-        .frame(height: 855 * scale)
-        .clipShape(RoundedRectangle(cornerRadius: 45 * scale, style: .continuous))
-        .shadow(color: .black.opacity(0.075), radius: 30 * scale, x: 0, y: 18 * scale)
+        .frame(height: 540 * scale)
+        .clipShape(RoundedRectangle(cornerRadius: 40 * scale, style: .continuous))
+        .shadow(color: .black.opacity(0.05), radius: 22 * scale, x: 0, y: 10 * scale)
+    }
+}
+
+private struct ConversionPreviewPill: View {
+    let scale: CGFloat
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10 * scale) {
+            Text("kyouno meeting ha 3ji")
+                .font(.system(size: 31 * scale, weight: .regular, design: .rounded))
+                .foregroundStyle(AppColor.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.74)
+
+            HStack(spacing: 10 * scale) {
+                Image(systemName: "arrow.turn.down.right")
+                    .font(.system(size: 20 * scale, weight: .regular))
+                    .foregroundStyle(AppColor.softText)
+
+                Text("今日の meeting は 3時")
+                    .font(.system(size: 31 * scale, weight: .regular, design: .rounded))
+                    .foregroundStyle(AppColor.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.74)
+            }
+        }
+        .padding(.horizontal, 22 * scale)
+        .padding(.vertical, 22 * scale)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white.opacity(0.85), in: RoundedRectangle(cornerRadius: 28 * scale, style: .continuous))
+    }
+}
+
+private struct PageDots: View {
+    let scale: CGFloat
+
+    var body: some View {
+        HStack(spacing: 15 * scale) {
+            ForEach(0..<4, id: \.self) { index in
+                Circle()
+                    .fill(index == 0 ? AppColor.ink.opacity(0.9) : AppColor.rule)
+                    .frame(width: 10 * scale, height: 10 * scale)
+            }
+        }
     }
 }
 
@@ -193,7 +321,7 @@ private struct HeroBackgroundImage: View {
     }
 
     private func loadHeroImage() -> UIImage? {
-        if let url = Bundle.main.url(forResource: "bg", withExtension: "png"),
+        if let url = Bundle.main.url(forResource: "background", withExtension: "png"),
            let image = UIImage(contentsOfFile: url.path) {
             return image
         }
@@ -203,146 +331,16 @@ private struct HeroBackgroundImage: View {
             .deletingLastPathComponent() // Container
             .deletingLastPathComponent() // iOS
             .deletingLastPathComponent() // repo root
-        return UIImage(contentsOfFile: repoRoot.appendingPathComponent("public/bg.png").path)
+        return UIImage(contentsOfFile: repoRoot.appendingPathComponent("public/background.png").path)
     }
 }
 
-private struct HeroVisualArea: View {
-    let scale: CGFloat
-
-    var body: some View {
-        ZStack {
-            HeroBackgroundImage()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            VStack(spacing: 30 * scale) {
-                TextInputBubble(scale: scale)
-                    .frame(width: 480 * scale, height: 114 * scale)
-
-                Image(systemName: "arrow.down")
-                    .font(.system(size: 31 * scale, weight: .light))
-                    .foregroundStyle(.white.opacity(0.92))
-                    .shadow(color: .black.opacity(0.12), radius: 3 * scale, x: 0, y: 1 * scale)
-
-                ConvertedBubble(scale: scale)
-                    .frame(width: 506 * scale, height: 112 * scale)
-            }
-            .padding(.top, 22 * scale)
-        }
-    }
-}
-
-private struct TextInputBubble: View {
-    let scale: CGFloat
-
-    var body: some View {
-        HStack(spacing: 0) {
-            Text("kyouno meeting ha 3ji")
-                .font(.system(size: 33 * scale, weight: .regular, design: .rounded))
-                .foregroundStyle(AppColor.ink)
-                .lineLimit(1)
-
-            Rectangle()
-                .fill(AppColor.ink)
-                .frame(width: max(1, 2 * scale), height: 42 * scale)
-                .padding(.leading, 2 * scale)
-        }
-        .padding(.horizontal, 46 * scale)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .background(.white.opacity(0.90), in: RoundedRectangle(cornerRadius: 28 * scale, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 28 * scale, style: .continuous)
-                .stroke(.white.opacity(0.86), lineWidth: 12 * scale)
-        }
-        .shadow(color: .black.opacity(0.08), radius: 18 * scale, x: 0, y: 8 * scale)
-    }
-}
-
-private struct ConvertedBubble: View {
-    let scale: CGFloat
-
-    var body: some View {
-        HStack(spacing: 20 * scale) {
-            Circle()
-                .fill(AppColor.lavender.opacity(0.92))
-                .frame(width: 54 * scale, height: 54 * scale)
-                .overlay {
-                    Image(systemName: "globe")
-                        .font(.system(size: 30 * scale, weight: .regular))
-                        .foregroundStyle(AppColor.purple.opacity(0.72))
-                }
-
-            Text("今日の meeting は 3時")
-                .font(.system(size: 34 * scale, weight: .regular, design: .rounded))
-                .foregroundStyle(AppColor.ink)
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
-        }
-        .padding(.horizontal, 40 * scale)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .background(.white.opacity(0.91), in: RoundedRectangle(cornerRadius: 28 * scale, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 28 * scale, style: .continuous)
-                .stroke(.white.opacity(0.86), lineWidth: 8 * scale)
-        }
-        .shadow(color: .black.opacity(0.08), radius: 18 * scale, x: 0, y: 8 * scale)
-    }
-}
-
-private struct HeroTextArea: View {
-    let scale: CGFloat
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 18 * scale) {
-                ForEach(0..<5, id: \.self) { index in
-                    Capsule()
-                        .fill(index == 0 ? AppColor.ink : AppColor.rule)
-                        .frame(height: 9 * scale)
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(.top, 44 * scale)
-
-            Text("Type naturally in two languages")
-                .font(.system(size: 41 * scale, weight: .regular, design: .rounded))
-                .foregroundStyle(AppColor.ink)
-                .lineLimit(1)
-                .minimumScaleFactor(0.78)
-                .padding(.top, 50 * scale)
-
-            Text("Bikey understands whether you mean\nJapanese or English.")
-                .font(.system(size: 27 * scale, weight: .regular, design: .rounded))
-                .foregroundStyle(AppColor.muted)
-                .lineSpacing(9 * scale)
-                .padding(.top, 24 * scale)
-
-            Spacer(minLength: 0)
-
-            HStack {
-                Spacer()
-
-                Text("Try it")
-                    .font(.system(size: 29 * scale, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
-                    .frame(width: 168 * scale, height: 80 * scale)
-                    .background(Color(red: 0.145, green: 0.144, blue: 0.160).opacity(0.94), in: Capsule())
-                    .shadow(color: .black.opacity(0.11), radius: 14 * scale, x: 0, y: 7 * scale)
-            }
-            .padding(.bottom, 36 * scale)
-        }
-        .padding(.horizontal, 42 * scale)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.white.opacity(0.89))
-    }
-}
-
-private struct ExamplesHeader: View {
+private struct RecentHeader: View {
     let scale: CGFloat
 
     var body: some View {
         HStack {
-            Text("Examples")
+            Text("Recent conversions")
                 .font(.system(size: 32 * scale, weight: .regular, design: .rounded))
                 .foregroundStyle(Color(red: 0.445, green: 0.438, blue: 0.489))
                 .lineLimit(1)
@@ -359,37 +357,68 @@ private struct ExamplesHeader: View {
                 }
                 .shadow(color: .black.opacity(0.04), radius: 16 * scale, x: 0, y: 8 * scale)
         }
-        .frame(height: 76 * scale)
-        .padding(.horizontal, 18 * scale)
+        .frame(height: 70 * scale)
+        .padding(.horizontal, 10 * scale)
     }
 }
 
-private struct ExampleCard: View {
+private struct RecentConversion: Identifiable {
+    let id = UUID()
+    let dayLabel: String
+    let sourceText: String
+    let convertedText: String
+    let timeText: String
+}
+
+private struct RecentConversionCard: View {
+    let item: RecentConversion
     let scale: CGFloat
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Today")
-                .font(.system(size: 25 * scale, weight: .regular, design: .rounded))
-                .foregroundStyle(AppColor.muted)
+            HStack(alignment: .top, spacing: 20 * scale) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(item.dayLabel)
+                        .font(.system(size: 24 * scale, weight: .regular, design: .rounded))
+                        .foregroundStyle(AppColor.muted)
 
-            Text("今日のMTG、slidesだけ先に送るね")
-                .font(.system(size: 34 * scale, weight: .regular, design: .rounded))
-                .foregroundStyle(AppColor.ink)
-                .padding(.top, 33 * scale)
-                .lineLimit(1)
-                .minimumScaleFactor(0.72)
+                    Text(item.sourceText)
+                        .font(.system(size: 43 * scale, weight: .regular, design: .rounded))
+                        .foregroundStyle(AppColor.ink)
+                        .padding(.top, 20 * scale)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
 
-            Text("4:15 p.m.")
-                .font(.system(size: 25 * scale, weight: .regular, design: .rounded))
-                .foregroundStyle(AppColor.muted.opacity(0.78))
-                .padding(.top, 28 * scale)
-                .lineLimit(1)
+                    Text(item.convertedText)
+                        .font(.system(size: 38 * scale, weight: .regular, design: .rounded))
+                        .foregroundStyle(AppColor.softText)
+                        .padding(.top, 14 * scale)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+
+                    Text(item.timeText)
+                        .font(.system(size: 27 * scale, weight: .regular, design: .rounded))
+                        .foregroundStyle(AppColor.muted.opacity(0.8))
+                        .padding(.top, 22 * scale)
+                }
+
+                Spacer(minLength: 0)
+
+                Circle()
+                    .fill(AppColor.paleLavender.opacity(0.86))
+                    .frame(width: 64 * scale, height: 64 * scale)
+                    .overlay {
+                        Image(systemName: "doc.on.doc")
+                            .font(.system(size: 27 * scale, weight: .regular))
+                            .foregroundStyle(AppColor.purple.opacity(0.54))
+                    }
+                    .padding(.top, 44 * scale)
+            }
         }
-        .padding(.horizontal, 44 * scale)
+        .padding(.horizontal, 34 * scale)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 204 * scale)
-        .background(.white.opacity(0.88), in: RoundedRectangle(cornerRadius: 34 * scale, style: .continuous))
-        .shadow(color: .black.opacity(0.045), radius: 22 * scale, x: 0, y: 12 * scale)
+        .frame(height: 270 * scale)
+        .background(.white.opacity(0.9), in: RoundedRectangle(cornerRadius: 36 * scale, style: .continuous))
+        .shadow(color: .black.opacity(0.04), radius: 20 * scale, x: 0, y: 10 * scale)
     }
 }

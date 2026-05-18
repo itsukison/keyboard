@@ -6,6 +6,7 @@ import XCTest
 /// ("wanna" → わんあ) plus a few common JA romaji and mixed-run baselines.
 final class BilingualSpanDetectorTrigramTests: XCTestCase {
     private let detector = BilingualSpanDetector()
+    private let japaneseHeavyDetector = BilingualSpanDetector(embeddedEnglishSplitPolicy: .japaneseHeavy)
 
     private func kinds(of raw: String) -> [SpanKind] {
         detector.detect(raw).map(\.kind)
@@ -69,6 +70,17 @@ final class BilingualSpanDetectorTrigramTests: XCTestCase {
         XCTAssertEqual(first(of: "the"), .english)
     }
 
+    func testJapaneseIsEnglishWord() {
+        XCTAssertEqual(first(of: "Japanese"), .english)
+        XCTAssertEqual(first(of: "japanese"), .english)
+    }
+
+    func testLongCommonEnglishWordsStayEnglish() {
+        for word in ["language", "keyboard", "iphone", "message", "internet", "important"] {
+            XCTAssertEqual(first(of: word), .english, "word=\(word)")
+        }
+    }
+
     // MARK: - No-space mixed runs
 
     func testKyouNoMeetingHaMixedRun() {
@@ -77,6 +89,19 @@ final class BilingualSpanDetectorTrigramTests: XCTestCase {
         // Expect at least one JA span and an EN span ("meeting").
         XCTAssertTrue(kinds.contains(.japanese))
         XCTAssertTrue(spans.contains { $0.raw.contains("meeting") && $0.kind == .english })
+    }
+
+    func testJapaneseHeavyDoesNotSplitFourLetterEnglishInsideJapaneseRun() {
+        let spans = japaneseHeavyDetector.detect("gohandoko")
+        XCTAssertEqual(spans.count, 1, "got spans=\(spans.map { "\($0.kind.rawValue):\($0.raw)" })")
+        XCTAssertEqual(spans.first?.kind, .japanese)
+        XCTAssertEqual(spans.first?.kana, "ごはんどこ")
+    }
+
+    func testJapaneseHeavyStillSplitsLongEmbeddedEnglish() {
+        let spans = japaneseHeavyDetector.detect("kyounomeetingha3jini")
+        XCTAssertTrue(spans.contains { $0.raw == "meeting" && $0.kind == .english },
+            "got spans=\(spans.map { "\($0.kind.rawValue):\($0.raw)" })")
     }
 
     func testFullJapaneseRunWithEmbeddedEnglishVowelClustersStaysJapanese() {

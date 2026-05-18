@@ -1,5 +1,5 @@
 {
-  "originHash" : "b46df9f9b03df54c858aa39071f2f47d8eab3e882698bfdf1d4cc2a14d89abb1",
+  "originHash" : "55a79cea6f118ba30d23d12152c7099df92ba530827bab65eeed64e6a0bd3742",
   "pins" : [
     {
       "identity" : "azookeykanakanjiconverter",
@@ -17,6 +17,24 @@
       "state" : {
         "revision" : "31c4dd39bcdc07eaa42a384bdc88ea599022b800",
         "version" : "1.1.2"
+      }
+    },
+    {
+      "identity" : "keyboardkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/KeyboardKit/KeyboardKit.git",
+      "state" : {
+        "revision" : "16c76394aae1895170dde4ba5546dc556e5a176c",
+        "version" : "10.4.1"
+      }
+    },
+    {
+      "identity" : "licensekit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/LicenseKit/LicenseKit.git",
+      "state" : {
+        "revision" : "f9bdcdc3472918c6da7566940a12936374f0faee",
+        "version" : "2.1.3"
       }
     },
     {

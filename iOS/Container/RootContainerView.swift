@@ -36,9 +36,13 @@ enum AppTab: String, CaseIterable, Hashable {
 
 struct RootContainerView: View {
     @State private var selectedTab: AppTab = .home
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    @State private var isOnboardingPresented = false
+    private let showsOnboardingOnLaunch: Bool
 
-    init(initialTab: AppTab = .home) {
+    init(initialTab: AppTab = .home, showsOnboardingOnLaunch: Bool = false) {
         _selectedTab = State(initialValue: initialTab)
+        self.showsOnboardingOnLaunch = showsOnboardingOnLaunch
     }
 
     var body: some View {
@@ -73,7 +77,11 @@ struct RootContainerView: View {
                             horizontalInset: horizontalInset
                         )
                     case .profile:
-                        ProfileScreen(scale: scale, horizontalInset: horizontalInset)
+                        ProfileScreen(
+                            scale: scale,
+                            horizontalInset: horizontalInset,
+                            onShowOnboarding: { isOnboardingPresented = true }
+                        )
                     }
                 }
 
@@ -83,6 +91,17 @@ struct RootContainerView: View {
             }
         }
         .preferredColorScheme(.light)
+        .onAppear {
+            if showsOnboardingOnLaunch && !hasSeenOnboarding {
+                isOnboardingPresented = true
+            }
+        }
+        .fullScreenCover(isPresented: $isOnboardingPresented) {
+            ContainerOnboardingScreen {
+                hasSeenOnboarding = true
+                isOnboardingPresented = false
+            }
+        }
     }
 }
 
@@ -207,29 +226,142 @@ private struct ProfileAvatar: View {
     let scale: CGFloat
 
     var body: some View {
-        Circle()
-            .fill(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.885, green: 0.858, blue: 0.826),
-                        Color(red: 0.121, green: 0.124, blue: 0.132)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+        Image(systemName: "person.crop.circle.fill")
+            .font(.system(size: 42 * scale, weight: .regular))
+    }
+}
+
+private enum OnboardingDesign {
+    static let width: CGFloat = 390
+    static let height: CGFloat = 844
+}
+
+private struct ContainerOnboardingScreen: View {
+    let onGetStarted: () -> Void
+
+    var body: some View {
+        GeometryReader { proxy in
+            let canvasWidth = proxy.size.width
+            let canvasHeight = proxy.size.height
+            let scale = min(
+                canvasWidth / OnboardingDesign.width,
+                canvasHeight / OnboardingDesign.height
             )
-            .frame(width: 42 * scale, height: 42 * scale)
-            .overlay(alignment: .top) {
-                Circle()
-                    .fill(Color(red: 0.875, green: 0.805, blue: 0.746))
-                    .frame(width: 18 * scale, height: 18 * scale)
-                    .offset(y: 7 * scale)
+            let xOffset = (canvasWidth - OnboardingDesign.width * scale) / 2
+            let yOffset = (canvasHeight - OnboardingDesign.height * scale) / 2
+
+            ZStack {
+                ContainerOnboardingBackgroundImage()
+                    .ignoresSafeArea()
+
+                ZStack(alignment: .topLeading) {
+                    HStack(spacing: 3 * scale) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 11 * scale, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.94))
+                        Text("Willow")
+                            .font(.system(size: 13 * scale, weight: .regular))
+                            .foregroundStyle(.white.opacity(0.95))
+                    }
+                    .frame(width: 280 * scale, alignment: .leading)
+                    .offset(x: xOffset + 54 * scale, y: yOffset + 323 * scale)
+
+                    heroText(scale: scale)
+                        .lineSpacing(0)
+                        .frame(width: 300 * scale, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .offset(x: xOffset + 54 * scale, y: yOffset + 357 * scale)
+
+                    HStack(spacing: 5 * scale) {
+                        Circle()
+                            .fill(.white.opacity(0.96))
+                            .frame(width: 5 * scale, height: 5 * scale)
+                        Circle()
+                            .fill(.white.opacity(0.50))
+                            .frame(width: 5 * scale, height: 5 * scale)
+                        Circle()
+                            .fill(.white.opacity(0.50))
+                            .frame(width: 5 * scale, height: 5 * scale)
+                        Circle()
+                            .fill(.white.opacity(0.50))
+                            .frame(width: 5 * scale, height: 5 * scale)
+                    }
+                    .position(x: xOffset + 195 * scale, y: yOffset + 690 * scale)
+
+                    Button(action: onGetStarted) {
+                        Text("Get started")
+                            .font(.system(size: 14 * scale, weight: .regular))
+                            .foregroundStyle(Color(red: 0.151, green: 0.152, blue: 0.187))
+                            .frame(width: 334 * scale, height: 51 * scale)
+                            .background(.white.opacity(0.82), in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .position(x: xOffset + 195 * scale, y: yOffset + 734 * scale)
+
+                    HStack(spacing: 4 * scale) {
+                        Text("Already have an account?")
+                            .font(.system(size: 12 * scale, weight: .regular))
+                            .foregroundStyle(Color.black.opacity(0.55))
+
+                        Button(action: onGetStarted) {
+                            Text("Sign In")
+                                .font(.system(size: 12 * scale, weight: .semibold))
+                                .foregroundStyle(Color(red: 0.129, green: 0.129, blue: 0.155).opacity(0.86))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .position(x: xOffset + 195 * scale, y: yOffset + 790 * scale)
+                }
             }
-            .overlay(alignment: .bottom) {
-                Capsule()
-                    .fill(Color(red: 0.103, green: 0.106, blue: 0.114))
-                    .frame(width: 30 * scale, height: 20 * scale)
-                    .offset(y: -4 * scale)
-            }
+        }
+        .preferredColorScheme(.light)
+    }
+
+    private func heroText(scale: CGFloat) -> Text {
+        let stop = Text("Stop typing.")
+            .font(.system(size: 30 * scale, weight: .semibold))
+            .foregroundColor(.white.opacity(0.98))
+        let start = Text(" Start")
+            .font(.system(size: 30 * scale, weight: .regular))
+            .foregroundColor(.white.opacity(0.72))
+        let talking = Text("\ntalking.")
+            .font(.system(size: 30 * scale, weight: .semibold))
+            .foregroundColor(.white.opacity(0.98))
+
+        return stop + start + talking
+    }
+}
+
+private struct ContainerOnboardingBackgroundImage: View {
+    var body: some View {
+        if let image = loadBackgroundImage() {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .clipped()
+        } else {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.918, green: 0.891, blue: 0.964),
+                    Color(red: 0.815, green: 0.742, blue: 0.934)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+
+    private func loadBackgroundImage() -> UIImage? {
+        if let url = Bundle.main.url(forResource: "onboardbg", withExtension: "png"),
+           let image = UIImage(contentsOfFile: url.path) {
+            return image
+        }
+
+        let sourceURL = URL(fileURLWithPath: #filePath)
+        let repoRoot = sourceURL
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        return UIImage(contentsOfFile: repoRoot.appendingPathComponent("public/onboardbg.png").path)
     }
 }

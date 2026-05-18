@@ -7,6 +7,7 @@ import Foundation
 /// tokens in the prompt degrade context-sensitive picks).
 public final class InputController {
     private let detector: BilingualSpanDetector
+    private let japaneseHeavyDetector: BilingualSpanDetector
     private let adapter: KanaKanjiAdapter
     private let useZenzai: Bool
     private var _leftSideContext: String = ""
@@ -28,10 +29,12 @@ public final class InputController {
 
     public init(
         detector: BilingualSpanDetector = .init(),
+        japaneseHeavyDetector: BilingualSpanDetector = .init(embeddedEnglishSplitPolicy: .japaneseHeavy),
         adapter: KanaKanjiAdapter,
         useZenzai: Bool
     ) {
         self.detector = detector
+        self.japaneseHeavyDetector = japaneseHeavyDetector
         self.adapter = adapter
         self.useZenzai = useZenzai
     }
@@ -73,16 +76,67 @@ public final class InputController {
             }
             return output
         }
+
+        public var kanaPreview: String {
+            var output = ""
+            for span in spans {
+                switch span.kind {
+                case .english:
+                    output += span.raw
+                case .japanese:
+                    output += span.kana ?? span.raw
+                }
+            }
+            return output
+        }
     }
 
     /// Run detection + conversion for the current uncommitted input buffer.
     /// Caller passes only the *uncommitted* romaji; committed text lives in `leftSideContext`.
     /// Safe to call concurrently with `commit(japanese:)` and `reset()`.
-    public func convert(_ raw: String, documentPrior: LanguagePrior = .neutral) -> LiveConversion {
+    public func convert(
+        _ raw: String,
+        documentPrior: LanguagePrior = .neutral,
+        displayMode: CompositionDisplayMode = .balancedRaw
+    ) -> LiveConversion {
         conversionLock.lock()
         defer { conversionLock.unlock() }
+        return convertLocked(raw, documentPrior: documentPrior, displayMode: displayMode)
+    }
 
-        let spans = detector.detect(raw, documentPrior: documentPrior)
+    /// Same as `convert`, but returns immediately if the converter is already
+    /// busy. Used by latency-sensitive UI paths such as space confirmation:
+    /// never block the main thread behind stale background candidate work.
+    public func convertIfIdle(
+        _ raw: String,
+        documentPrior: LanguagePrior = .neutral,
+        displayMode: CompositionDisplayMode = .balancedRaw
+    ) -> LiveConversion? {
+        guard conversionLock.try() else { return nil }
+        defer { conversionLock.unlock() }
+        return convertLocked(raw, documentPrior: documentPrior, displayMode: displayMode)
+    }
+
+    /// Classification + kana-only fallback for the current buffer. This avoids
+    /// candidate generation entirely, so it is safe for immediate UI decisions
+    /// when the full converter is busy.
+    public func fastPreview(
+        _ raw: String,
+        documentPrior: LanguagePrior = .neutral,
+        displayMode: CompositionDisplayMode = .balancedRaw
+    ) -> LiveConversion {
+        let activeDetector = displayMode.isJapaneseHeavy ? japaneseHeavyDetector : detector
+        let spans = activeDetector.detect(raw, documentPrior: documentPrior)
+        return LiveConversion(raw: raw, spans: spans, conversions: [])
+    }
+
+    private func convertLocked(
+        _ raw: String,
+        documentPrior: LanguagePrior,
+        displayMode: CompositionDisplayMode
+    ) -> LiveConversion {
+        let activeDetector = displayMode.isJapaneseHeavy ? japaneseHeavyDetector : detector
+        let spans = activeDetector.detect(raw, documentPrior: documentPrior)
         lock.lock()
         var contextBefore = _leftSideContext
         lock.unlock()

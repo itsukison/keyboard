@@ -68,4 +68,27 @@ final class EnglishAutocorrectGateTests: XCTestCase {
         // "xyz" → "the" distance 3 > cap 1.
         XCTAssertFalse(EnglishAutocorrectGate.correctionPassesGate(typed: "xyz", candidate: "the"))
     }
+
+    // MARK: - Capitalization intent
+
+    func testManualCapitalizationSuppressesAutocorrection() {
+        XCTAssertTrue(EnglishAutocorrectGate.shouldSuppressAutocorrectionForManualCapitalization(
+            typed: "Jon",
+            hasManualCapitalization: true
+        ))
+    }
+
+    func testAutoCapitalizationDoesNotSuppressAutocorrection() {
+        XCTAssertFalse(EnglishAutocorrectGate.shouldSuppressAutocorrectionForManualCapitalization(
+            typed: "Teh",
+            hasManualCapitalization: false
+        ))
+    }
+
+    func testLowercaseWordDoesNotSuppressAutocorrection() {
+        XCTAssertFalse(EnglishAutocorrectGate.shouldSuppressAutocorrectionForManualCapitalization(
+            typed: "teh",
+            hasManualCapitalization: true
+        ))
+    }
 }

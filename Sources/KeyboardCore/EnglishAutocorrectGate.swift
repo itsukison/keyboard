@@ -18,6 +18,16 @@ public enum EnglishAutocorrectGate {
         return levenshtein(typed.lowercased(), candidate.lowercased()) <= cap
     }
 
+    /// User-triggered capitalization is a strong signal that the token may be a
+    /// name, acronym, brand, or other specific spelling. Auto-capitalization at
+    /// sentence start is tracked by the caller and should not set this flag.
+    public static func shouldSuppressAutocorrectionForManualCapitalization(
+        typed: String,
+        hasManualCapitalization: Bool
+    ) -> Bool {
+        hasManualCapitalization && typed.contains(where: { $0.isUppercase })
+    }
+
     /// Optimal String Alignment (Damerau-Levenshtein) distance. Counts an
     /// adjacent transposition (`teh` ↔ `the`) as a single edit, which is
     /// what real autocorrect engines do. Falls back to plain insert / delete

@@ -1,9 +1,12 @@
+import KeyboardCore
 import SwiftUI
 import UIKit
 
 struct ProfileScreen: View {
     let scale: CGFloat
     let horizontalInset: CGFloat
+    let onShowOnboarding: () -> Void
+    @State private var compositionDisplayMode = KeyboardSettingsStore.readCompositionDisplayMode()
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
@@ -14,29 +17,26 @@ struct ProfileScreen: View {
                 ProfileCard(scale: scale)
                     .padding(.top, 42 * scale)
 
-                ProfileSectionTitle("Activity", scale: scale)
+                ProfileSectionTitle("Account", scale: scale)
                     .padding(.top, 56 * scale)
 
                 ProfileListCard(
                     rows: [
-                        .init(icon: "chart.bar", title: "Typing Statistics"),
-                        .init(icon: "flame", title: "Streak History"),
-                        .init(icon: "clock", title: "Time Saved"),
-                        .init(icon: "medal", title: "Achievements")
-                    ],
-                    scale: scale
-                )
-                .padding(.top, 17 * scale)
-
-                ProfileSectionTitle("Account", scale: scale)
-                    .padding(.top, 42 * scale)
-
-                ProfileListCard(
-                    rows: [
                         .init(icon: "person", title: "Personal Information"),
+                        .init(
+                            icon: "character.cursor.ibeam",
+                            title: "Language Mode",
+                            toggle: .languageMode
+                        ),
+                        .init(
+                            icon: "sparkles",
+                            title: "View Onboarding",
+                            action: onShowOnboarding
+                        ),
                         .init(icon: "crown", title: "Plan", trailing: "Bikey Pro"),
                         .init(icon: "gift", title: "Invite a Friend")
                     ],
+                    compositionDisplayMode: $compositionDisplayMode,
                     scale: scale
                 )
                 .padding(.top, 17 * scale)
@@ -45,6 +45,12 @@ struct ProfileScreen: View {
             }
             .padding(.horizontal, horizontalInset)
             .frame(maxWidth: .infinity)
+        }
+        .onAppear {
+            compositionDisplayMode = KeyboardSettingsStore.readCompositionDisplayMode()
+        }
+        .onChange(of: compositionDisplayMode) { newValue in
+            KeyboardSettingsStore.writeCompositionDisplayMode(newValue)
         }
     }
 }
@@ -95,14 +101,16 @@ private struct ProfileCard: View {
                     VStack(alignment: .leading, spacing: 8 * scale) {
                         HStack(spacing: 12 * scale) {
                             Text("Kris Wu")
-                                .font(.system(size: 40 * scale, weight: .regular, design: .rounded))
+                                .font(.system(size: 44 * scale, weight: .regular, design: .rounded))
                                 .foregroundStyle(.white)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.84)
 
                             Text("PRO")
-                                .font(.system(size: 14 * scale, weight: .bold, design: .rounded))
+                                .font(.system(size: 16 * scale, weight: .bold, design: .rounded))
                                 .foregroundStyle(.white.opacity(0.88))
-                                .padding(.horizontal, 10 * scale)
-                                .frame(height: 25 * scale)
+                                .padding(.horizontal, 12 * scale)
+                                .frame(height: 29 * scale)
                                 .background(.white.opacity(0.18), in: Capsule())
                                 .overlay {
                                     Capsule()
@@ -111,9 +119,9 @@ private struct ProfileCard: View {
                         }
 
                         Text("32,345 words typed\nwith Bikey")
-                            .font(.system(size: 22 * scale, weight: .regular, design: .rounded))
+                            .font(.system(size: 26 * scale, weight: .regular, design: .rounded))
                             .foregroundStyle(.white.opacity(0.82))
-                            .lineSpacing(5 * scale)
+                            .lineSpacing(7 * scale)
                     }
 
                     Spacer()
@@ -144,20 +152,17 @@ private struct ProfileCard: View {
 
                         VStack(alignment: .leading, spacing: 8 * scale) {
                             Text("Bikey")
-                                .font(.system(size: 31 * scale, weight: .semibold, design: .rounded))
+                                .font(.system(size: 34 * scale, weight: .semibold, design: .rounded))
                                 .foregroundStyle(.white)
 
                             Text("Type Japanese and English\nwithout switching.")
-                                .font(.system(size: 20 * scale, weight: .regular, design: .rounded))
+                                .font(.system(size: 24 * scale, weight: .regular, design: .rounded))
                                 .foregroundStyle(.white.opacity(0.76))
-                                .lineSpacing(4 * scale)
+                                .lineSpacing(6 * scale)
                         }
                     }
 
                     Spacer()
-
-                    QRPlaceholder(scale: scale)
-                        .frame(width: 156 * scale, height: 156 * scale)
                 }
                 .padding(.top, 38 * scale)
             }
@@ -210,33 +215,14 @@ private struct ProfilePortrait: View {
 
     var body: some View {
         Circle()
-            .fill(.white)
+            .fill(.white.opacity(0.92))
             .overlay {
-                ZStack {
-                    Circle()
-                        .fill(Color(red: 0.930, green: 0.925, blue: 0.918))
-
-                    Circle()
-                        .fill(Color(red: 0.120, green: 0.122, blue: 0.132))
-                        .frame(width: 47 * scale, height: 47 * scale)
-                        .offset(y: 34 * scale)
-
-                    Circle()
-                        .fill(Color(red: 0.780, green: 0.700, blue: 0.640))
-                        .frame(width: 38 * scale, height: 42 * scale)
-                        .offset(y: -5 * scale)
-
-                    RoundedRectangle(cornerRadius: 17 * scale, style: .continuous)
-                        .fill(Color(red: 0.058, green: 0.060, blue: 0.067))
-                        .frame(width: 56 * scale, height: 34 * scale)
-                        .offset(y: -30 * scale)
-
-                    Circle()
-                        .fill(Color(red: 0.095, green: 0.097, blue: 0.105))
-                        .frame(width: 78 * scale, height: 72 * scale)
-                        .offset(y: 67 * scale)
-                }
-                .clipShape(Circle())
+                Image(systemName: "person.crop.circle.fill")
+                    .font(.system(size: 102 * scale, weight: .regular))
+                    .foregroundStyle(
+                        Color(red: 0.230, green: 0.226, blue: 0.255).opacity(0.88),
+                        Color(red: 0.930, green: 0.925, blue: 0.918)
+                    )
             }
     }
 }
@@ -249,11 +235,11 @@ private struct ProfileStat: View {
     var body: some View {
         VStack(spacing: 11 * scale) {
             Text(value)
-                .font(.system(size: 29 * scale, weight: .regular, design: .rounded))
+                .font(.system(size: 32 * scale, weight: .regular, design: .rounded))
                 .foregroundStyle(.white)
 
             Text(label)
-                .font(.system(size: 21 * scale, weight: .regular, design: .rounded))
+                .font(.system(size: 24 * scale, weight: .regular, design: .rounded))
                 .foregroundStyle(.white.opacity(0.74))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
@@ -332,7 +318,7 @@ private struct ProfileSectionTitle: View {
 
     var body: some View {
         Text(title)
-            .font(.system(size: 27 * scale, weight: .regular, design: .rounded))
+            .font(.system(size: 38 * scale, weight: .regular, design: .rounded))
             .foregroundStyle(Color(red: 0.475, green: 0.468, blue: 0.512))
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.leading, 22 * scale)
@@ -341,12 +327,17 @@ private struct ProfileSectionTitle: View {
 
 private struct ProfileListCard: View {
     let rows: [ProfileRowModel]
+    var compositionDisplayMode: Binding<CompositionDisplayMode>? = nil
     let scale: CGFloat
 
     var body: some View {
         VStack(spacing: 0) {
             ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
-                ProfileListRow(model: row, scale: scale)
+                ProfileListRow(
+                    model: row,
+                    compositionDisplayMode: compositionDisplayMode,
+                    scale: scale
+                )
 
                 if index < rows.count - 1 {
                     Divider()
@@ -360,47 +351,88 @@ private struct ProfileListCard: View {
 }
 
 private struct ProfileRowModel {
+    enum ToggleKind {
+        case languageMode
+    }
+
     let icon: String
     let title: String
     let trailing: String?
+    let toggle: ToggleKind?
+    let action: (() -> Void)?
 
-    init(icon: String, title: String, trailing: String? = nil) {
+    init(
+        icon: String,
+        title: String,
+        trailing: String? = nil,
+        toggle: ToggleKind? = nil,
+        action: (() -> Void)? = nil
+    ) {
         self.icon = icon
         self.title = title
         self.trailing = trailing
+        self.toggle = toggle
+        self.action = action
     }
 }
 
 private struct ProfileListRow: View {
     let model: ProfileRowModel
+    var compositionDisplayMode: Binding<CompositionDisplayMode>?
     let scale: CGFloat
 
+    private var isJapaneseHeavy: Binding<Bool> {
+        Binding(
+            get: { compositionDisplayMode?.wrappedValue == .japaneseHeavyKana },
+            set: { compositionDisplayMode?.wrappedValue = $0 ? .japaneseHeavyKana : .balancedRaw }
+        )
+    }
+
     var body: some View {
+        if let action = model.action, model.toggle == nil {
+            Button(action: action) {
+                rowContent
+            }
+            .buttonStyle(.plain)
+        } else {
+            rowContent
+        }
+    }
+
+    private var rowContent: some View {
         HStack(spacing: 28 * scale) {
             Image(systemName: model.icon)
-                .font(.system(size: 31 * scale, weight: .regular))
+                .font(.system(size: 35 * scale, weight: .regular))
                 .foregroundStyle(AppColor.purple.opacity(0.48))
                 .frame(width: 40 * scale)
 
             Text(model.title)
-                .font(.system(size: 27 * scale, weight: .regular, design: .rounded))
+                .font(.system(size: 32 * scale, weight: .regular, design: .rounded))
                 .foregroundStyle(AppColor.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
 
             Spacer()
 
-            if let trailing = model.trailing {
+            if model.toggle == .languageMode, compositionDisplayMode != nil {
+                Toggle("", isOn: isJapaneseHeavy)
+                    .labelsHidden()
+                    .tint(AppColor.purple.opacity(0.82))
+                    .scaleEffect(scale)
+                    .frame(width: 52 * scale, height: 32 * scale)
+            } else if let trailing = model.trailing {
                 Text(trailing)
-                    .font(.system(size: 24 * scale, weight: .regular, design: .rounded))
+                    .font(.system(size: 30 * scale, weight: .regular, design: .rounded))
                     .foregroundStyle(AppColor.purple.opacity(0.74))
             }
 
-            Image(systemName: "chevron.right")
-                .font(.system(size: 24 * scale, weight: .regular))
-                .foregroundStyle(Color.black.opacity(0.22))
+            if model.toggle == nil {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 26 * scale, weight: .regular))
+                    .foregroundStyle(Color.black.opacity(0.22))
+            }
         }
         .padding(.horizontal, 48 * scale)
-        .frame(height: 82 * scale)
+        .frame(height: 102 * scale)
     }
 }

@@ -18,17 +18,33 @@ public struct LanguagePrior: Equatable, Sendable {
 }
 
 public struct BilingualSpanDetector: Sendable {
+    public enum EmbeddedEnglishSplitPolicy: Sendable {
+        case balanced
+        case japaneseHeavy
+
+        var minimumWordLength: Int {
+            switch self {
+            case .balanced:
+                return 4
+            case .japaneseHeavy:
+                return 5
+            }
+        }
+    }
+
     public let englishWords: Set<String>
     private let embeddedEnglishWords: [String]
     private let trigramScorer: TrigramScorer
 
     public init(
         englishWords: Set<String> = BilingualSpanDetector.defaultEnglishWords,
+        embeddedEnglishSplitPolicy: EmbeddedEnglishSplitPolicy = .balanced,
         trigramScorer: TrigramScorer = .shared
     ) {
         self.englishWords = englishWords
+        let minimumEmbeddedLength = embeddedEnglishSplitPolicy.minimumWordLength
         self.embeddedEnglishWords = englishWords
-            .filter { $0.count >= 4 }
+            .filter { $0.count >= minimumEmbeddedLength }
             .sorted { lhs, rhs in
                 if lhs.count == rhs.count { return lhs < rhs }
                 return lhs.count > rhs.count
@@ -84,6 +100,12 @@ public struct BilingualSpanDetector: Sendable {
         "store", "shop", "park", "train", "bus", "plane", "airport", "station",
         "hotel", "restaurant", "hospital", "doctor", "nurse", "police",
         "problem", "solution", "project", "report", "document", "love",
+        "language", "english", "japanese", "keyboard", "iphone", "apple",
+        "android", "google", "microsoft", "github", "swift", "python", "code",
+        "coding", "software", "app", "application", "website", "browser",
+        "server", "client", "database", "network", "account", "password",
+        "profile", "setting", "settings", "notification", "calendar",
+        "schedule", "today", "tomorrow", "yesterday",
         // conjunctions / common bits
         "and", "or", "but", "so", "if", "because", "while", "until", "though",
         "although", "since", "yet", "nor",
@@ -366,6 +388,13 @@ public struct BilingualSpanDetector: Sendable {
 
         if englishHit {
             en += clean.count <= 2 ? 1.0 : 2.5
+            // A known English word of ordinary word length is a stronger
+            // signal than the fact that its letters can be greedily read as
+            // romaji. This catches words like "japanese" and "language",
+            // both of which are kana-complete but overwhelmingly English when
+            // typed as a standalone alphabet token.
+            if clean.count >= 4 { en += 2.0 }
+            if clean.count >= 8 { en += 1.0 }
         }
 
         if clean.contains("'") {
@@ -373,7 +402,7 @@ public struct BilingualSpanDetector: Sendable {
         }
 
         if hasUppercase {
-            en += 0.8
+            en += 1.2
         }
 
         if Self.impossibleJapaneseClusters.contains(where: { clean.contains($0) }) {
