@@ -1,11 +1,13 @@
 import Foundation
+import KeyboardPreferences
 
-enum SuggestionKind: Equatable {
+enum SuggestionKind: Equatable, Sendable {
     case english
+    case keepRaw
     case japanese
 }
 
-struct SuggestionItem: Identifiable, Equatable {
+struct SuggestionItem: Identifiable, Equatable, Sendable {
     let id: String
     let title: String
     let replacementText: String
@@ -28,18 +30,36 @@ struct SuggestionItem: Identifiable, Equatable {
 
 @MainActor
 final class EnglishSuggestionState: ObservableObject {
-    @Published var items: [SuggestionItem] = []
+    private(set) var displayMode: CompositionDisplayMode = KeyboardSettingsStore.readCompositionDisplayMode()
+    private(set) var previewTitle: String?
+    private(set) var items: [SuggestionItem] = []
     var onSelect: ((SuggestionItem) -> Void)?
 
     var isEmpty: Bool {
-        items.isEmpty
+        previewTitle == nil && items.isEmpty
     }
 
     func select(_ item: SuggestionItem) {
         onSelect?(item)
     }
 
+    func update(
+        displayMode: CompositionDisplayMode,
+        previewTitle: String?,
+        items: [SuggestionItem]
+    ) {
+        guard self.displayMode != displayMode ||
+              self.previewTitle != previewTitle ||
+              self.items != items else {
+            return
+        }
+        objectWillChange.send()
+        self.displayMode = displayMode
+        self.previewTitle = previewTitle
+        self.items = items
+    }
+
     func clear() {
-        items = []
+        update(displayMode: displayMode, previewTitle: nil, items: [])
     }
 }

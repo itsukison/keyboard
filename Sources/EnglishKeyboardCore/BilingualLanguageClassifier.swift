@@ -21,10 +21,13 @@ public struct BilingualLanguageClassifier: Sendable {
     public var englishWords: Set<String>
     private let embeddedEnglishWords: [String]
 
-    public init(englishWords: Set<String> = Self.defaultEnglishWords) {
+    public init(
+        englishWords: Set<String> = Self.defaultEnglishWords,
+        embeddedEnglishMinimumWordLength: Int = 4
+    ) {
         self.englishWords = englishWords
         self.embeddedEnglishWords = englishWords
-            .filter { $0.count >= 4 }
+            .filter { $0.count >= embeddedEnglishMinimumWordLength }
             .sorted { lhs, rhs in
                 lhs.count == rhs.count ? lhs < rhs : lhs.count > rhs.count
             }
@@ -234,6 +237,7 @@ public struct BilingualLanguageClassifier: Sendable {
         "is", "am", "are", "was", "were", "be", "been", "being", "have", "has",
         "had", "do", "does", "did", "will", "would", "shall", "should", "can",
         "could", "may", "might", "must", "go", "going", "come", "get", "got",
+        "like", "look",
         "make", "made", "take", "took", "see", "saw", "know", "knew", "think",
         "thought", "say", "said", "tell", "want", "give", "find", "use", "work",
         "call", "try", "ask", "need", "feel", "leave", "put", "mean", "keep",

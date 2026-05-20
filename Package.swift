@@ -11,6 +11,7 @@ let package = Package(
     products: [
         .library(name: "KeyboardCore", targets: ["KeyboardCore"]),
         .library(name: "EnglishKeyboardCore", targets: ["EnglishKeyboardCore"]),
+        .library(name: "KeyboardPreferences", targets: ["KeyboardPreferences"]),
         .executable(name: "KanaKanjiHarness", targets: ["KanaKanjiHarness"]),
         .executable(name: "TrigramBuilder", targets: ["TrigramBuilder"]),
         .executable(name: "TrigramProbe", targets: ["TrigramProbe"]),
@@ -26,6 +27,7 @@ let package = Package(
         .target(
             name: "KeyboardCore",
             dependencies: [
+                "KeyboardPreferences",
                 .product(
                     name: "KanaKanjiConverterModuleWithDefaultDictionary",
                     package: "AzooKeyKanaKanjiConverter"
@@ -44,8 +46,12 @@ let package = Package(
             exclude: ["data"]
         ),
         .target(
+            name: "KeyboardPreferences"
+        ),
+        .target(
             name: "EnglishKeyboardCore",
             dependencies: [
+                "KeyboardPreferences",
                 .product(
                     name: "KanaKanjiConverterModuleWithDefaultDictionary",
                     package: "AzooKeyKanaKanjiConverter"
@@ -87,6 +93,12 @@ let package = Package(
             ],
             swiftSettings: [
                 .interoperabilityMode(.Cxx)
+            ]
+        ),
+        .testTarget(
+            name: "KeyboardPreferencesTests",
+            dependencies: [
+                "KeyboardPreferences",
             ]
         ),
     ]

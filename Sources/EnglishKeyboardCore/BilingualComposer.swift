@@ -1,4 +1,5 @@
 import Foundation
+import KeyboardPreferences
 
 public struct BilingualCommit: Equatable, Sendable {
     public let rawToken: String
@@ -23,19 +24,42 @@ public struct BilingualCommit: Equatable, Sendable {
 }
 
 public struct BilingualSuggestion: Equatable, Sendable {
+    public enum Kind: Equatable, Sendable {
+        case keepRaw
+        case japanese
+    }
+
     public let rawToken: String
     public let replacementText: String
     public let deleteCount: Int
+    public let kind: Kind
 
-    public init(rawToken: String, replacementText: String, deleteCount: Int) {
+    public init(
+        rawToken: String,
+        replacementText: String,
+        deleteCount: Int,
+        kind: Kind = .japanese
+    ) {
         self.rawToken = rawToken
         self.replacementText = replacementText
         self.deleteCount = deleteCount
+        self.kind = kind
+    }
+}
+
+public struct BilingualSuggestionSet: Equatable, Sendable {
+    public let keepRaw: BilingualSuggestion?
+    public let japanese: [BilingualSuggestion]
+
+    public init(keepRaw: BilingualSuggestion?, japanese: [BilingualSuggestion]) {
+        self.keepRaw = keepRaw
+        self.japanese = japanese
     }
 }
 
 public final class BilingualComposer {
     private let classifier: BilingualLanguageClassifier
+    private let displayClassifier: BilingualLanguageClassifier
     private let converter: JapaneseCandidateConverting
 
     public init(
@@ -43,6 +67,10 @@ public final class BilingualComposer {
         converter: JapaneseCandidateConverting
     ) {
         self.classifier = classifier
+        self.displayClassifier = BilingualLanguageClassifier(
+            englishWords: classifier.englishWords,
+            embeddedEnglishMinimumWordLength: 5
+        )
         self.converter = converter
     }
 
@@ -58,10 +86,21 @@ public final class BilingualComposer {
         )
     }
 
+    public func keepRawSuggestion(beforeInput context: String) -> BilingualSuggestion? {
+        suggestionSet(beforeInput: context).keepRaw
+    }
+
     public func suggestions(beforeInput context: String) -> [BilingualSuggestion] {
-        guard let analysis = analyze(beforeInput: context) else { return [] }
+        suggestionSet(beforeInput: context).japanese
+    }
+
+    public func suggestionSet(beforeInput context: String) -> BilingualSuggestionSet {
+        guard let analysis = analyze(beforeInput: context) else {
+            return BilingualSuggestionSet(keepRaw: nil, japanese: [])
+        }
         var seen: Set<String> = []
         var suggestions: [BilingualSuggestion] = []
+        seen.insert(analysis.rawToken)
 
         for candidate in analysis.firstJapaneseCandidates where !candidate.isEmpty {
             let replacement = analysis.replacement(firstJapaneseCandidate: candidate)
@@ -69,12 +108,66 @@ public final class BilingualComposer {
             suggestions.append(BilingualSuggestion(
                 rawToken: analysis.rawToken,
                 replacementText: replacement,
-                deleteCount: analysis.rawToken.count
+                deleteCount: analysis.rawToken.count,
+                kind: .japanese
             ))
             if suggestions.count >= 8 { break }
         }
 
-        return suggestions
+        let keepRaw = BilingualSuggestion(
+            rawToken: analysis.rawToken,
+            replacementText: analysis.rawToken,
+            deleteCount: analysis.rawToken.count,
+            kind: .keepRaw
+        )
+        return BilingualSuggestionSet(keepRaw: keepRaw, japanese: suggestions)
+    }
+
+    public func displayPreview(
+        beforeInput context: String,
+        displayMode: CompositionDisplayMode
+    ) -> String? {
+        Self.displayPreview(
+            beforeInput: context,
+            displayMode: displayMode,
+            classifier: displayClassifier
+        )
+    }
+
+    public static func displayPreview(
+        beforeInput context: String,
+        displayMode: CompositionDisplayMode,
+        classifier: BilingualLanguageClassifier = .init(embeddedEnglishMinimumWordLength: 5)
+    ) -> String? {
+        guard displayMode.isJapaneseHeavy else { return nil }
+        let token = Self.trailingConvertibleToken(in: context)
+        guard !token.isEmpty else { return nil }
+
+        let contextBeforeToken = String(context.dropLast(token.count))
+        let spans = classifier.spans(in: token, contextBefore: contextBeforeToken)
+        guard spans.contains(where: { $0.language == .japanese }) else { return nil }
+
+        let preview = spans.reduce(into: "") { output, span in
+            switch span.language {
+            case .english:
+                output += span.raw
+            case .japanese:
+                output += JapaneseRomaji.toLiveKana(span.raw)
+            }
+        }
+        return preview == token ? nil : preview
+    }
+
+    public static func containsJapaneseSpan(
+        beforeInput context: String,
+        classifier: BilingualLanguageClassifier = .init()
+    ) -> Bool {
+        let token = Self.trailingConvertibleToken(in: context)
+        guard token.count >= 2 else { return false }
+        let contextBeforeToken = String(context.dropLast(token.count))
+        return classifier
+            .spans(in: token, contextBefore: contextBeforeToken)
+            .contains { $0.language == .japanese }
     }
 
     private struct Analysis {

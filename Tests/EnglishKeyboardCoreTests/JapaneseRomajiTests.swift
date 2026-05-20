@@ -14,4 +14,12 @@ final class JapaneseRomajiTests: XCTestCase {
         let parse = JapaneseRomaji.parse("str")
         XCTAssertFalse(parse.isComplete)
     }
+
+    func testLiveKanaConvertsCommonJapanesePhrase() {
+        XCTAssertEqual(JapaneseRomaji.toLiveKana("korekara"), "これから")
+    }
+
+    func testLiveKanaShowsInvalidFragmentsInsideKanaRun() {
+        XCTAssertEqual(JapaneseRomaji.toLiveKana("dokotde"), "どこtで")
+    }
 }

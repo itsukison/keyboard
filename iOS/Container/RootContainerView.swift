@@ -36,21 +36,40 @@ enum AppTab: String, CaseIterable, Hashable {
 
 struct RootContainerView: View {
     @State private var selectedTab: AppTab = .home
-    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
-    @State private var isOnboardingPresented = false
-    private let showsOnboardingOnLaunch: Bool
+    @StateObject private var stats = ConversionStats.shared
+    @EnvironmentObject private var session: UserSession
+    @Environment(\.scenePhase) private var scenePhase
 
-    init(initialTab: AppTab = .home, showsOnboardingOnLaunch: Bool = false) {
+    init(initialTab: AppTab = .home) {
         _selectedTab = State(initialValue: initialTab)
-        self.showsOnboardingOnLaunch = showsOnboardingOnLaunch
     }
 
     var body: some View {
+        Group {
+            switch session.state {
+            case .loading:
+                LoadingSplash()
+            case .signedOut:
+                ContainerOnboardingScreen()
+            case .signedIn:
+                signedInBody
+            }
+        }
+        .preferredColorScheme(.light)
+        .onAppear { stats.refresh() }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active {
+                stats.refresh()
+            }
+        }
+    }
+
+    private var signedInBody: some View {
         GeometryReader { proxy in
             let width = proxy.size.width
             let height = proxy.size.height
             let scale = min(width / HomeDesign.designWidth, height / HomeDesign.designHeight)
-            let horizontalInset = 50 * scale
+            let horizontalInset = 62 * scale
 
             ZStack(alignment: .bottom) {
                 AppColor.background
@@ -59,7 +78,12 @@ struct RootContainerView: View {
                 Group {
                     switch selectedTab {
                     case .home:
-                        HomeScreen(scale: scale, horizontalInset: horizontalInset)
+                        HomeScreen(
+                            scale: scale,
+                            horizontalInset: horizontalInset,
+                            viewportWidth: width,
+                            stats: stats
+                        )
                     case .phrases:
                         PlaceholderScreen(
                             title: "Phrases",
@@ -79,8 +103,7 @@ struct RootContainerView: View {
                     case .profile:
                         ProfileScreen(
                             scale: scale,
-                            horizontalInset: horizontalInset,
-                            onShowOnboarding: { isOnboardingPresented = true }
+                            horizontalInset: horizontalInset
                         )
                     }
                 }
@@ -90,17 +113,16 @@ struct RootContainerView: View {
                     .padding(.bottom, 30 * scale)
             }
         }
-        .preferredColorScheme(.light)
-        .onAppear {
-            if showsOnboardingOnLaunch && !hasSeenOnboarding {
-                isOnboardingPresented = true
-            }
-        }
-        .fullScreenCover(isPresented: $isOnboardingPresented) {
-            ContainerOnboardingScreen {
-                hasSeenOnboarding = true
-                isOnboardingPresented = false
-            }
+    }
+}
+
+private struct LoadingSplash: View {
+    var body: some View {
+        ZStack {
+            AppColor.background
+                .ignoresSafeArea()
+            ProgressView()
+                .tint(AppColor.purple)
         }
     }
 }
@@ -196,7 +218,8 @@ private struct LiquidTabBar: View {
         withAnimation(.easeOut(duration: 0.14)) {
             isMorphing = true
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 140_000_000)
             withAnimation(.spring(response: 0.32, dampingFraction: 0.72)) {
                 isMorphing = false
             }
@@ -237,131 +260,203 @@ private enum OnboardingDesign {
 }
 
 private struct ContainerOnboardingScreen: View {
-    let onGetStarted: () -> Void
-
+    @State private var debugAutoNav = ProcessInfo.processInfo.environment["BIKEY_AUTONAV"]
     var body: some View {
-        GeometryReader { proxy in
-            let canvasWidth = proxy.size.width
-            let canvasHeight = proxy.size.height
-            let scale = min(
-                canvasWidth / OnboardingDesign.width,
-                canvasHeight / OnboardingDesign.height
-            )
-            let xOffset = (canvasWidth - OnboardingDesign.width * scale) / 2
-            let yOffset = (canvasHeight - OnboardingDesign.height * scale) / 2
+        NavigationStack {
+            GeometryReader { proxy in
+                let scale = min(
+                    proxy.size.width / OnboardingDesign.width,
+                    proxy.size.height / OnboardingDesign.height
+                )
 
-            ZStack {
-                ContainerOnboardingBackgroundImage()
-                    .ignoresSafeArea()
+                ZStack {
+                    OnboardingBackground()
+                        .ignoresSafeArea()
 
-                ZStack(alignment: .topLeading) {
-                    HStack(spacing: 3 * scale) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 11 * scale, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.94))
-                        Text("Willow")
-                            .font(.system(size: 13 * scale, weight: .regular))
-                            .foregroundStyle(.white.opacity(0.95))
-                    }
-                    .frame(width: 280 * scale, alignment: .leading)
-                    .offset(x: xOffset + 54 * scale, y: yOffset + 323 * scale)
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 64 * scale)
 
-                    heroText(scale: scale)
-                        .lineSpacing(0)
-                        .frame(width: 300 * scale, alignment: .leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .offset(x: xOffset + 54 * scale, y: yOffset + 357 * scale)
+                        WelcomeAppIcon(scale: scale)
+                            .frame(width: 132 * scale, height: 132 * scale)
 
-                    HStack(spacing: 5 * scale) {
-                        Circle()
-                            .fill(.white.opacity(0.96))
-                            .frame(width: 5 * scale, height: 5 * scale)
-                        Circle()
-                            .fill(.white.opacity(0.50))
-                            .frame(width: 5 * scale, height: 5 * scale)
-                        Circle()
-                            .fill(.white.opacity(0.50))
-                            .frame(width: 5 * scale, height: 5 * scale)
-                        Circle()
-                            .fill(.white.opacity(0.50))
-                            .frame(width: 5 * scale, height: 5 * scale)
-                    }
-                    .position(x: xOffset + 195 * scale, y: yOffset + 690 * scale)
+                        Text("Bikey")
+                            .font(.system(size: 44 * scale, weight: .semibold, design: .rounded))
+                            .foregroundStyle(AppColor.ink)
+                            .padding(.top, 28 * scale)
 
-                    Button(action: onGetStarted) {
-                        Text("Get started")
-                            .font(.system(size: 14 * scale, weight: .regular))
-                            .foregroundStyle(Color(red: 0.151, green: 0.152, blue: 0.187))
-                            .frame(width: 334 * scale, height: 51 * scale)
-                            .background(.white.opacity(0.82), in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                    .position(x: xOffset + 195 * scale, y: yOffset + 734 * scale)
+                        Text("Type Japanese and English\nwithout switching keyboards.")
+                            .font(.system(size: 17 * scale, weight: .regular, design: .rounded))
+                            .foregroundStyle(AppColor.muted)
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(4 * scale)
+                            .padding(.top, 14 * scale)
 
-                    HStack(spacing: 4 * scale) {
-                        Text("Already have an account?")
-                            .font(.system(size: 12 * scale, weight: .regular))
-                            .foregroundStyle(Color.black.opacity(0.55))
+                        WelcomePreviewCard(scale: scale)
+                            .padding(.top, 42 * scale)
+                            .padding(.horizontal, 32 * scale)
 
-                        Button(action: onGetStarted) {
-                            Text("Sign In")
-                                .font(.system(size: 12 * scale, weight: .semibold))
-                                .foregroundStyle(Color(red: 0.129, green: 0.129, blue: 0.155).opacity(0.86))
+                        Spacer(minLength: 32 * scale)
+
+                        VStack(spacing: 14 * scale) {
+                            NavigationLink {
+                                SignUpForm()
+                            } label: {
+                                OnboardingPrimaryButtonLabel(title: "Create account", scale: scale)
+                            }
+                            .buttonStyle(.plain)
+
+                            NavigationLink {
+                                SignInForm()
+                            } label: {
+                                HStack(spacing: 5 * scale) {
+                                    Text("Already have an account?")
+                                        .foregroundStyle(AppColor.muted)
+                                    Text("Sign in")
+                                        .foregroundStyle(AppColor.purple)
+                                        .fontWeight(.semibold)
+                                }
+                                .font(.system(size: 14 * scale, weight: .regular, design: .rounded))
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
+                        .padding(.horizontal, 28 * scale)
+                        .padding(.bottom, 36 * scale)
                     }
-                    .position(x: xOffset + 195 * scale, y: yOffset + 790 * scale)
+                }
+                .navigationDestination(isPresented: Binding(
+                    get: { debugAutoNav == "signup" },
+                    set: { if !$0 { debugAutoNav = nil } }
+                )) {
+                    SignUpForm()
+                }
+                .navigationDestination(isPresented: Binding(
+                    get: { debugAutoNav == "signin" },
+                    set: { if !$0 { debugAutoNav = nil } }
+                )) {
+                    SignInForm()
                 }
             }
+            .preferredColorScheme(.light)
         }
-        .preferredColorScheme(.light)
-    }
-
-    private func heroText(scale: CGFloat) -> Text {
-        let stop = Text("Stop typing.")
-            .font(.system(size: 30 * scale, weight: .semibold))
-            .foregroundColor(.white.opacity(0.98))
-        let start = Text(" Start")
-            .font(.system(size: 30 * scale, weight: .regular))
-            .foregroundColor(.white.opacity(0.72))
-        let talking = Text("\ntalking.")
-            .font(.system(size: 30 * scale, weight: .semibold))
-            .foregroundColor(.white.opacity(0.98))
-
-        return stop + start + talking
     }
 }
 
-private struct ContainerOnboardingBackgroundImage: View {
+struct OnboardingPrimaryButtonLabel: View {
+    let title: String
+    let scale: CGFloat
+    var isLoading: Bool = false
+    var isEnabled: Bool = true
+
     var body: some View {
-        if let image = loadBackgroundImage() {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .clipped()
-        } else {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.918, green: 0.891, blue: 0.964),
-                    Color(red: 0.815, green: 0.742, blue: 0.934)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+        ZStack {
+            if isLoading {
+                ProgressView()
+                    .tint(.white)
+            } else {
+                Text(title)
+                    .font(.system(size: 17 * scale, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white)
+            }
         }
+        .frame(maxWidth: .infinity)
+        .frame(height: 56 * scale)
+        .background(
+            LinearGradient(
+                colors: isEnabled
+                    ? [AppColor.purple, Color(red: 0.438, green: 0.305, blue: 0.764)]
+                    : [AppColor.purple.opacity(0.45), Color(red: 0.438, green: 0.305, blue: 0.764).opacity(0.45)],
+                startPoint: .leading,
+                endPoint: .trailing
+            ),
+            in: Capsule()
+        )
+        .shadow(color: AppColor.purple.opacity(isEnabled ? 0.28 : 0.0), radius: 18 * scale, x: 0, y: 10 * scale)
+    }
+}
+
+private struct WelcomeAppIcon: View {
+    let scale: CGFloat
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 30 * scale, style: .continuous)
+            .fill(Color.white)
+            .shadow(color: AppColor.purple.opacity(0.18), radius: 26 * scale, x: 0, y: 16 * scale)
+            .overlay {
+                Group {
+                    if let image = Self.loadIcon() {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        Image(systemName: "globe")
+                            .font(.system(size: 64 * scale, weight: .regular))
+                            .foregroundStyle(AppColor.purple.opacity(0.72))
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 30 * scale, style: .continuous))
+            }
     }
 
-    private func loadBackgroundImage() -> UIImage? {
-        if let url = Bundle.main.url(forResource: "onboardbg", withExtension: "png"),
+    private static func loadIcon() -> UIImage? {
+        if let url = Bundle.main.url(forResource: "newapp", withExtension: "png"),
            let image = UIImage(contentsOfFile: url.path) {
             return image
         }
-
         let sourceURL = URL(fileURLWithPath: #filePath)
         let repoRoot = sourceURL
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        return UIImage(contentsOfFile: repoRoot.appendingPathComponent("public/onboardbg.png").path)
+        return UIImage(contentsOfFile: repoRoot.appendingPathComponent("public/newapp.png").path)
+    }
+}
+
+private struct WelcomePreviewCard: View {
+    let scale: CGFloat
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12 * scale) {
+            Text("kyouno meeting ha 3ji")
+                .font(.system(size: 16 * scale, weight: .regular, design: .rounded))
+                .foregroundStyle(AppColor.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+
+            HStack(spacing: 8 * scale) {
+                Image(systemName: "arrow.turn.down.right")
+                    .font(.system(size: 12 * scale, weight: .regular))
+                    .foregroundStyle(AppColor.softText)
+
+                Text("今日の meeting は 3時")
+                    .font(.system(size: 16 * scale, weight: .regular, design: .rounded))
+                    .foregroundStyle(AppColor.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+        }
+        .padding(.horizontal, 22 * scale)
+        .padding(.vertical, 20 * scale)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 22 * scale, style: .continuous)
+                .fill(.white)
+        )
+        .shadow(color: .black.opacity(0.05), radius: 18 * scale, x: 0, y: 10 * scale)
+    }
+}
+
+struct OnboardingBackground: View {
+    var body: some View {
+        ZStack {
+            AppColor.background
+            LinearGradient(
+                colors: [
+                    AppColor.lavender.opacity(0.55),
+                    AppColor.background.opacity(0)
+                ],
+                startPoint: .top,
+                endPoint: .center
+            )
+        }
     }
 }

@@ -1,4 +1,5 @@
 import EnglishKeyboardCore
+import KeyboardPreferences
 import KeyboardKit
 import UIKit
 
@@ -6,23 +7,35 @@ final class KeyboardViewController: KeyboardInputViewController {
     private let suggestions = EnglishSuggestionState()
     private let textChecker = UITextChecker()
     private var userLexiconEntries: Set<String> = []
+    private let displayPreviewClassifier = BilingualLanguageClassifier(embeddedEnglishMinimumWordLength: 5)
+    private let japaneseDetectionClassifier = BilingualLanguageClassifier()
+    private let japaneseSuggestionWorker = JapaneseSuggestionWorker()
     private lazy var bilingualComposer = BilingualComposer(converter: AzooKeyJapaneseConverter())
     private var cachedJapaneseSuggestionContext: String?
+    private var cachedJapaneseSuggestionMode: CompositionDisplayMode?
     private var cachedJapaneseSuggestionItems: [SuggestionItem] = []
+    private var cachedKeepRawSuggestion: BilingualSuggestion?
+    private var japaneseSuggestionTask: Task<Void, Never>?
+    private var pendingJapaneseSuggestionContext: String?
+    private var pendingJapaneseSuggestionMode: CompositionDisplayMode?
+    private var rawConfirmedContext: String?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         suggestions.onSelect = { [weak self] item in
             self?.applySuggestion(item)
         }
-        requestSupplementaryLexicon { [weak self] lexicon in
+        let completion: (UILexicon) -> Void = { [weak self] lexicon in
             Task { @MainActor in
-                self?.userLexiconEntries = Set(lexicon.entries.flatMap {
+                guard let self else { return }
+                let entries = Set(lexicon.entries.flatMap {
                     [$0.documentText.lowercased(), $0.userInput.lowercased()]
                 })
-                self?.refreshSuggestionsAfterInput()
+                self.userLexiconEntries = entries
+                self.refreshSuggestionsAfterInput()
             }
         }
+        requestSupplementaryLexicon(completion: completion)
     }
 
     override func viewWillSetupKeyboardKit() {
@@ -37,6 +50,7 @@ final class KeyboardViewController: KeyboardInputViewController {
         setupKeyboardView { controller in
             EnglishKeyboardView(
                 services: controller.services,
+                keyboardContext: controller.state.keyboardContext,
                 suggestions: suggestions
             )
         }
@@ -48,56 +62,154 @@ final class KeyboardViewController: KeyboardInputViewController {
     }
 
     func handleSpaceAction() {
-        let before = textDocumentProxy.documentContextBeforeInput ?? ""
+        guard let proxy = activeTextDocumentProxy else { return }
+        let before = proxy.documentContextBeforeInput ?? ""
+        let displayMode = currentDisplayMode
+
+        if rawConfirmedContext == before {
+            rawConfirmedContext = nil
+            proxy.insertText(" ")
+            refreshSuggestionsAfterInput()
+            return
+        }
+
+        if displayMode.isJapaneseHeavy,
+           currentTraits.allowsAutocorrection,
+           proxy.selectedText?.isEmpty ?? true {
+            if let cachedCommit = cachedJapaneseCommit(beforeInput: before, displayMode: displayMode) {
+                commitJapaneseReplacement(cachedCommit.replacementText, deleteCount: cachedCommit.deleteCount, appendSpace: false)
+                return
+            }
+            if let japaneseCommit = bilingualComposer.commitForSpace(beforeInput: before) {
+                commitJapanese(japaneseCommit, appendSpace: false)
+                return
+            }
+        }
+
         if shouldApplyDoubleSpacePeriod(beforeInput: before) {
-            textDocumentProxy.deleteBackward()
-            textDocumentProxy.insertText(". ")
+            proxy.deleteBackward()
+            proxy.insertText(". ")
+            rawConfirmedContext = nil
             refreshSuggestionsAfterInput()
             return
         }
 
         if currentTraits.allowsAutocorrection,
-           textDocumentProxy.selectedText?.isEmpty ?? true,
-           let japaneseCommit = bilingualComposer.commitForSpace(beforeInput: before) {
-            deleteCharacters(japaneseCommit.deleteCount)
-            textDocumentProxy.insertText(japaneseCommit.replacementText)
-            textDocumentProxy.insertText(" ")
-            suggestions.clear()
-            return
+           proxy.selectedText?.isEmpty ?? true {
+            if let cachedCommit = cachedJapaneseCommit(beforeInput: before, displayMode: displayMode) {
+                commitJapaneseReplacement(cachedCommit.replacementText, deleteCount: cachedCommit.deleteCount, appendSpace: true)
+                return
+            }
+            if let japaneseCommit = bilingualComposer.commitForSpace(beforeInput: before) {
+                commitJapanese(japaneseCommit, appendSpace: true)
+                return
+            }
         }
 
         if let topCorrection = topCorrectionForTrailingWord(in: before) {
             deleteTrailingWord(from: before)
-            textDocumentProxy.insertText(topCorrection)
+            proxy.insertText(topCorrection)
         }
 
-        textDocumentProxy.insertText(" ")
+        proxy.insertText(" ")
+        rawConfirmedContext = nil
+        refreshSuggestionsAfterInput()
+    }
+
+    func handleReturnAction() -> Bool {
+        guard let proxy = activeTextDocumentProxy else { return false }
+        guard currentTraits.allowsAutocorrection else { return false }
+        guard proxy.selectedText?.isEmpty ?? true else { return false }
+        let before = proxy.documentContextBeforeInput ?? ""
+        let displayMode = currentDisplayMode
+        if displayMode.isJapaneseHeavy {
+            if let cachedCommit = cachedJapaneseCommit(beforeInput: before, displayMode: displayMode) {
+                commitJapaneseReplacement(cachedCommit.replacementText, deleteCount: cachedCommit.deleteCount, appendSpace: false)
+                return true
+            }
+            guard let japaneseCommit = bilingualComposer.commitForSpace(beforeInput: before) else {
+                return false
+            }
+            commitJapanese(japaneseCommit, appendSpace: false)
+            return true
+        }
+        guard let keepItem = keepRawSuggestion(beforeInput: before) else {
+            return false
+        }
+        guard BilingualComposer.trailingConvertibleToken(in: before).count == keepItem.deleteCount else {
+            refreshSuggestionsAfterInput()
+            return true
+        }
+        confirmRawContext(before)
+        return true
+    }
+
+    func handleLongVowelAction() {
+        guard let proxy = activeTextDocumentProxy else { return }
+        proxy.insertText("-")
+        rawConfirmedContext = nil
         refreshSuggestionsAfterInput()
     }
 
     func refreshSuggestionsAfterInput() {
-        guard currentTraits.allowsAutocorrection else {
-            suggestions.clear()
+        let displayMode = currentDisplayMode
+        guard let proxy = activeTextDocumentProxy else {
+            cancelPendingJapaneseSuggestions()
+            suggestions.update(displayMode: displayMode, previewTitle: nil, items: [])
+            setKeepReturnKeyActive(false)
+            rawConfirmedContext = nil
             return
         }
-        let before = textDocumentProxy.documentContextBeforeInput ?? ""
-        if let selected = textDocumentProxy.selectedText, !selected.isEmpty {
-            suggestions.clear()
+        guard currentTraits.allowsAutocorrection else {
+            cancelPendingJapaneseSuggestions()
+            suggestions.update(displayMode: displayMode, previewTitle: nil, items: [])
+            setKeepReturnKeyActive(false)
+            rawConfirmedContext = nil
+            return
+        }
+        let before = proxy.documentContextBeforeInput ?? ""
+        if rawConfirmedContext == before {
+            cancelPendingJapaneseSuggestions()
+            suggestions.update(displayMode: displayMode, previewTitle: nil, items: [])
+            setKeepReturnKeyActive(false)
+            return
+        }
+        rawConfirmedContext = nil
+        if let selected = proxy.selectedText, !selected.isEmpty {
+            cancelPendingJapaneseSuggestions()
+            suggestions.update(displayMode: displayMode, previewTitle: nil, items: [])
+            setKeepReturnKeyActive(false)
             return
         }
 
-        let japaneseItems = japaneseSuggestionItems(beforeInput: before)
-        if !japaneseItems.isEmpty {
-            suggestions.items = japaneseItems
+        let previewTitle = BilingualComposer.displayPreview(
+            beforeInput: before,
+            displayMode: displayMode,
+            classifier: displayPreviewClassifier
+        )
+
+        if let cachedJapanese = cachedJapaneseSuggestionResult(beforeInput: before, displayMode: displayMode) {
+            if !cachedJapanese.items.isEmpty {
+                suggestions.update(displayMode: displayMode, previewTitle: previewTitle, items: cachedJapanese.items)
+                setKeepReturnKeyActive(!displayMode.isJapaneseHeavy && cachedJapanese.keepRawSuggestion != nil)
+                return
+            }
+        } else if shouldRequestJapaneseSuggestions(beforeInput: before, displayMode: displayMode, previewTitle: previewTitle) {
+            suggestions.update(displayMode: displayMode, previewTitle: previewTitle, items: [])
+            setKeepReturnKeyActive(false)
+            scheduleJapaneseSuggestions(beforeInput: before, displayMode: displayMode)
             return
         }
+
+        cancelPendingJapaneseSuggestions()
 
         let word = Self.trailingEnglishWord(in: before)
         guard !word.isEmpty else {
-            suggestions.clear()
+            suggestions.update(displayMode: displayMode, previewTitle: previewTitle, items: [])
+            setKeepReturnKeyActive(false)
             return
         }
-        suggestions.items = suggestionResult(for: word).displayCandidates.map {
+        let items = suggestionResult(for: word).displayCandidates.map {
             SuggestionItem(
                 title: $0,
                 replacementText: $0,
@@ -105,34 +217,94 @@ final class KeyboardViewController: KeyboardInputViewController {
                 kind: .english
             )
         }
+        suggestions.update(displayMode: displayMode, previewTitle: previewTitle, items: items)
+        setKeepReturnKeyActive(false)
     }
 
     private func applySuggestion(_ item: SuggestionItem) {
         switch item.kind {
         case .english:
             replaceTrailingWord(with: item.replacementText)
+        case .keepRaw:
+            confirmRawSuggestion(item)
         case .japanese:
             replaceTrailingConvertibleToken(with: item.replacementText, deleteCount: item.deleteCount)
         }
     }
 
     private func replaceTrailingWord(with candidate: String) {
-        let before = textDocumentProxy.documentContextBeforeInput ?? ""
+        guard let proxy = activeTextDocumentProxy else { return }
+        let before = proxy.documentContextBeforeInput ?? ""
         guard !Self.trailingEnglishWord(in: before).isEmpty else { return }
         deleteTrailingWord(from: before)
-        textDocumentProxy.insertText(candidate)
+        proxy.insertText(candidate)
+        cancelPendingJapaneseSuggestions()
         suggestions.clear()
+        setKeepReturnKeyActive(false)
+        rawConfirmedContext = nil
     }
 
     private func replaceTrailingConvertibleToken(with replacement: String, deleteCount: Int) {
-        let before = textDocumentProxy.documentContextBeforeInput ?? ""
+        guard let proxy = activeTextDocumentProxy else { return }
+        let before = proxy.documentContextBeforeInput ?? ""
         guard BilingualComposer.trailingConvertibleToken(in: before).count == deleteCount else {
             refreshSuggestionsAfterInput()
             return
         }
         deleteCharacters(deleteCount)
-        textDocumentProxy.insertText(replacement)
+        proxy.insertText(replacement)
+        ConversionStats.shared.recordJapaneseConversion()
+        cancelPendingJapaneseSuggestions()
         suggestions.clear()
+        setKeepReturnKeyActive(false)
+        rawConfirmedContext = nil
+    }
+
+    private func commitJapanese(_ commit: BilingualCommit, appendSpace: Bool) {
+        commitJapaneseReplacement(commit.replacementText, deleteCount: commit.deleteCount, appendSpace: appendSpace)
+    }
+
+    private func commitJapaneseReplacement(_ replacementText: String, deleteCount: Int, appendSpace: Bool) {
+        guard let proxy = activeTextDocumentProxy else { return }
+        deleteCharacters(deleteCount)
+        proxy.insertText(replacementText)
+        if appendSpace {
+            proxy.insertText(" ")
+        }
+        ConversionStats.shared.recordJapaneseConversion()
+        cancelPendingJapaneseSuggestions()
+        suggestions.clear()
+        setKeepReturnKeyActive(false)
+        rawConfirmedContext = nil
+    }
+
+    private func cachedJapaneseCommit(
+        beforeInput context: String,
+        displayMode: CompositionDisplayMode
+    ) -> (replacementText: String, deleteCount: Int)? {
+        guard cachedJapaneseSuggestionContext == context,
+              cachedJapaneseSuggestionMode == displayMode,
+              let item = cachedJapaneseSuggestionItems.first(where: { $0.kind == .japanese }) else {
+            return nil
+        }
+        return (item.replacementText, item.deleteCount)
+    }
+
+    private func confirmRawSuggestion(_ item: SuggestionItem) {
+        guard let proxy = activeTextDocumentProxy else { return }
+        let before = proxy.documentContextBeforeInput ?? ""
+        guard BilingualComposer.trailingConvertibleToken(in: before).count == item.deleteCount else {
+            refreshSuggestionsAfterInput()
+            return
+        }
+        confirmRawContext(before)
+    }
+
+    private func confirmRawContext(_ context: String) {
+        rawConfirmedContext = context
+        cancelPendingJapaneseSuggestions()
+        suggestions.clear()
+        setKeepReturnKeyActive(false)
     }
 
     private func deleteTrailingWord(from context: String) {
@@ -141,9 +313,10 @@ final class KeyboardViewController: KeyboardInputViewController {
     }
 
     private func deleteCharacters(_ count: Int) {
+        guard let proxy = activeTextDocumentProxy else { return }
         guard count > 0 else { return }
         for _ in 0 ..< count {
-            textDocumentProxy.deleteBackward()
+            proxy.deleteBackward()
         }
     }
 
@@ -155,11 +328,25 @@ final class KeyboardViewController: KeyboardInputViewController {
         return result.topCorrection
     }
 
+    private func cachedJapaneseSuggestionResult(
+        beforeInput context: String,
+        displayMode: CompositionDisplayMode
+    ) -> (items: [SuggestionItem], keepRawSuggestion: BilingualSuggestion?)? {
+        if cachedJapaneseSuggestionContext == context,
+           cachedJapaneseSuggestionMode == displayMode {
+            return (cachedJapaneseSuggestionItems, cachedKeepRawSuggestion)
+        }
+        return nil
+    }
+
     private func japaneseSuggestionItems(beforeInput context: String) -> [SuggestionItem] {
-        if cachedJapaneseSuggestionContext == context {
+        let displayMode = currentDisplayMode
+        if cachedJapaneseSuggestionContext == context,
+           cachedJapaneseSuggestionMode == displayMode {
             return cachedJapaneseSuggestionItems
         }
-        let items = bilingualComposer.suggestions(beforeInput: context).map {
+        let set = bilingualComposer.suggestionSet(beforeInput: context)
+        var items = set.japanese.map {
             SuggestionItem(
                 title: $0.replacementText,
                 replacementText: $0.replacementText,
@@ -167,9 +354,110 @@ final class KeyboardViewController: KeyboardInputViewController {
                 kind: .japanese
             )
         }
+        if displayMode.isJapaneseHeavy,
+           let keepRaw = set.keepRaw,
+           !items.isEmpty {
+            items.insert(SuggestionItem(
+                title: keepRaw.replacementText,
+                replacementText: keepRaw.replacementText,
+                deleteCount: keepRaw.deleteCount,
+                kind: .keepRaw
+            ), at: 0)
+        }
         cachedJapaneseSuggestionContext = context
+        cachedJapaneseSuggestionMode = displayMode
         cachedJapaneseSuggestionItems = items
+        cachedKeepRawSuggestion = set.keepRaw
         return items
+    }
+
+    private func keepRawSuggestion(beforeInput context: String) -> BilingualSuggestion? {
+        if cachedJapaneseSuggestionContext == context,
+           cachedJapaneseSuggestionMode == currentDisplayMode {
+            return cachedKeepRawSuggestion
+        }
+        _ = japaneseSuggestionItems(beforeInput: context)
+        return cachedKeepRawSuggestion
+    }
+
+    private func shouldRequestJapaneseSuggestions(
+        beforeInput context: String,
+        displayMode: CompositionDisplayMode,
+        previewTitle: String?
+    ) -> Bool {
+        if displayMode.isJapaneseHeavy, previewTitle != nil {
+            return true
+        }
+        return BilingualComposer.containsJapaneseSpan(
+            beforeInput: context,
+            classifier: japaneseDetectionClassifier
+        )
+    }
+
+    private func scheduleJapaneseSuggestions(
+        beforeInput context: String,
+        displayMode: CompositionDisplayMode
+    ) {
+        if pendingJapaneseSuggestionContext == context,
+           pendingJapaneseSuggestionMode == displayMode {
+            return
+        }
+        pendingJapaneseSuggestionContext = context
+        pendingJapaneseSuggestionMode = displayMode
+        japaneseSuggestionTask?.cancel()
+
+        let worker = japaneseSuggestionWorker
+        japaneseSuggestionTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 25_000_000)
+            guard !Task.isCancelled else { return }
+            let result = await worker.suggestions(beforeInput: context, displayMode: displayMode)
+            await MainActor.run { [weak self] in
+                guard let self, !Task.isCancelled else { return }
+                self.applyJapaneseSuggestionResult(result)
+            }
+        }
+    }
+
+    private func applyJapaneseSuggestionResult(_ result: JapaneseSuggestionComputation) {
+        pendingJapaneseSuggestionContext = nil
+        pendingJapaneseSuggestionMode = nil
+        guard let proxy = activeTextDocumentProxy,
+              (proxy.documentContextBeforeInput ?? "") == result.context,
+              currentDisplayMode == result.displayMode else {
+            return
+        }
+
+        cachedJapaneseSuggestionContext = result.context
+        cachedJapaneseSuggestionMode = result.displayMode
+        cachedJapaneseSuggestionItems = result.items
+        cachedKeepRawSuggestion = result.keepRawSuggestion
+
+        let previewTitle = BilingualComposer.displayPreview(
+            beforeInput: result.context,
+            displayMode: result.displayMode,
+            classifier: displayPreviewClassifier
+        )
+        suggestions.update(
+            displayMode: result.displayMode,
+            previewTitle: previewTitle,
+            items: result.items
+        )
+        setKeepReturnKeyActive(
+            !result.displayMode.isJapaneseHeavy &&
+            result.keepRawSuggestion != nil &&
+            !result.items.isEmpty
+        )
+    }
+
+    private func cancelPendingJapaneseSuggestions() {
+        pendingJapaneseSuggestionContext = nil
+        pendingJapaneseSuggestionMode = nil
+        japaneseSuggestionTask?.cancel()
+        japaneseSuggestionTask = nil
+    }
+
+    private func setKeepReturnKeyActive(_ active: Bool) {
+        state.keyboardContext.returnKeyTypeOverride = active ? .custom(title: "Keep") : nil
     }
 
     private struct SuggestionResult {
@@ -235,7 +523,7 @@ final class KeyboardViewController: KeyboardInputViewController {
 
     private func hasManualCapitalization(for word: String) -> Bool {
         guard word.contains(where: { $0.isUppercase }) else { return false }
-        let before = textDocumentProxy.documentContextBeforeInput ?? ""
+        let before = activeTextDocumentProxy?.documentContextBeforeInput ?? ""
         let contextBeforeWord = String(before.dropLast(word.count))
         return !NativeKeyboardPolicy.shouldAutoCapitalize(
             after: contextBeforeWord,
@@ -245,7 +533,7 @@ final class KeyboardViewController: KeyboardInputViewController {
     }
 
     private func shouldApplyDoubleSpacePeriod(beforeInput context: String) -> Bool {
-        if let selected = textDocumentProxy.selectedText, !selected.isEmpty {
+        if let selected = activeTextDocumentProxy?.selectedText, !selected.isEmpty {
             return false
         }
         return NativeKeyboardPolicy.shouldApplyDoubleSpacePeriod(
@@ -255,8 +543,16 @@ final class KeyboardViewController: KeyboardInputViewController {
         )
     }
 
+    private var activeTextDocumentProxy: UITextDocumentProxy? {
+        originalTextDocumentProxy
+    }
+
     private var currentTraits: TraitState {
-        TraitState.read(from: textDocumentProxy)
+        TraitState.read(from: activeTextDocumentProxy)
+    }
+
+    private var currentDisplayMode: CompositionDisplayMode {
+        KeyboardSettingsStore.readCompositionDisplayMode()
     }
 
     private struct TraitState {
@@ -272,14 +568,14 @@ final class KeyboardViewController: KeyboardInputViewController {
         }
 
         @MainActor
-        static func read(from proxy: UITextDocumentProxy) -> TraitState {
+        static func read(from proxy: UITextDocumentProxy?) -> TraitState {
             let contentKind = Self.contentKind(
-                keyboardType: proxy.keyboardType ?? .default,
-                textContentType: proxy.textContentType
+                keyboardType: proxy?.keyboardType ?? .default,
+                textContentType: proxy?.textContentType
             )
             return TraitState(
-                autocapitalization: Self.autocapitalization(proxy.autocapitalizationType ?? .sentences),
-                autocorrectionEnabled: (proxy.autocorrectionType ?? .default) != .no,
+                autocapitalization: Self.autocapitalization(proxy?.autocapitalizationType ?? .sentences),
+                autocorrectionEnabled: (proxy?.autocorrectionType ?? .default) != .no,
                 contentKind: contentKind
             )
         }

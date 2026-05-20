@@ -6,6 +6,13 @@ import XCTest
 
 final class HomeSnapshotTests: XCTestCase {
     private let referenceSize = CGSize(width: HomeDesign.designWidth, height: HomeDesign.designHeight)
+    private static let fixtureProfile = UserSession.Profile(
+        id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+        displayName: "Kris Wu",
+        email: "kris@example.com",
+        createdAt: Date(timeIntervalSince1970: 1_700_000_000),
+        compositionDisplayMode: .balancedRaw
+    )
 
     func testHomeSnapshotBaseline() {
         let image = renderRootView(selectedTab: .home)
@@ -59,7 +66,9 @@ final class HomeSnapshotTests: XCTestCase {
     }
 
     private func renderFullRootView(selectedTab: AppTab) -> UIImage {
+        let session = UserSession(initialState: .signedIn(Self.fixtureProfile))
         let root = RootContainerView(initialTab: selectedTab)
+            .environmentObject(session)
             .frame(width: referenceSize.width, height: referenceSize.height)
             .preferredColorScheme(.light)
         let controller = UIHostingController(rootView: root)
@@ -128,7 +137,7 @@ private struct RootContainerViewTestHarness: View {
             let width = proxy.size.width
             let height = proxy.size.height
             let scale = min(width / HomeDesign.designWidth, height / HomeDesign.designHeight)
-            let horizontalInset = 50 * scale
+            let horizontalInset = 62 * scale
 
             ZStack(alignment: .bottom) {
                 AppColor.background
@@ -137,7 +146,12 @@ private struct RootContainerViewTestHarness: View {
                 Group {
                     switch selectedTab {
                     case .home:
-                        HomeScreen(scale: scale, horizontalInset: horizontalInset)
+                        HomeScreen(
+                            scale: scale,
+                            horizontalInset: horizontalInset,
+                            viewportWidth: width,
+                            stats: ConversionStats.shared
+                        )
                     case .phrases, .keyboard, .profile:
                         Color.clear
                     }

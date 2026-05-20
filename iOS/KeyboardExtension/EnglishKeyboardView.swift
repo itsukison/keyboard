@@ -3,13 +3,21 @@ import SwiftUI
 
 struct EnglishKeyboardView: View {
     let services: Keyboard.Services
+    @ObservedObject var keyboardContext: KeyboardContext
     @ObservedObject var suggestions: EnglishSuggestionState
 
     var body: some View {
         KeyboardView(
-            layout: nil,
+            layout: keyboardLayout,
             services: services,
-            buttonContent: { $0.view },
+            buttonContent: { params in
+                if case .custom(named: "longVowel") = params.item.action {
+                    Text("ー")
+                        .font(.system(size: 24, weight: .regular))
+                } else {
+                    params.view
+                }
+            },
             buttonView: { $0.view },
             collapsedView: { $0.view },
             emojiKeyboard: { $0.view },
@@ -17,6 +25,17 @@ struct EnglishKeyboardView: View {
                 EnglishSuggestionToolbar(suggestions: suggestions)
             }
         )
+    }
+
+    private var keyboardLayout: KeyboardLayout {
+        var layout = KeyboardLayout.standard(for: keyboardContext)
+        guard suggestions.displayMode.isJapaneseHeavy,
+              keyboardContext.keyboardType.isAlphabetic else {
+            return layout
+        }
+        layout.insert(.custom(named: "longVowel"), withWidth: .input, after: .character("l"))
+        layout.insert(.custom(named: "longVowel"), withWidth: .input, after: .character("L"))
+        return layout
     }
 }
 
@@ -30,6 +49,20 @@ private struct EnglishSuggestionToolbar: View {
                     Text(" ")
                         .frame(height: 42)
                 } else {
+                    if let preview = suggestions.previewTitle {
+                        Text(preview)
+                            .font(.body)
+                            .lineLimit(1)
+                            .padding(.horizontal, 16)
+                            .frame(height: 42)
+                            .foregroundStyle(.primary)
+
+                        if !suggestions.items.isEmpty {
+                            Divider()
+                                .frame(height: 22)
+                        }
+                    }
+
                     ForEach(suggestions.items) { item in
                         Button {
                             suggestions.select(item)

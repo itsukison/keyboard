@@ -1,4 +1,5 @@
 import Foundation
+import KeyboardPreferences
 
 /// Drives the bilingual conversion pipeline for a single document.
 ///

@@ -28,6 +28,9 @@ packages:
   SnapshotTesting:
     url: https://github.com/pointfreeco/swift-snapshot-testing
     from: 1.18.4
+  Supabase:
+    url: https://github.com/supabase/supabase-swift.git
+    from: 2.0.0
 
 targets:
   BilingualKeyboard:
@@ -37,9 +40,11 @@ targets:
       - path: iOS/Container
         excludes:
           - Resources/Info.plist
+      - path: iOS/Shared
       - path: public/bg.png
       - path: public/background.png
       - path: public/onboardbg.png
+      - path: public/newapp.png
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.core7.bikey
@@ -53,8 +58,14 @@ targets:
       # @executable_path/../../Frameworks, so the containing app must embed them.
       - package: KeyboardCore
         product: KeyboardCore
+      - package: KeyboardCore
+        product: EnglishKeyboardCore
+      - package: KeyboardCore
+        product: KeyboardPreferences
       - package: KeyboardKit
         product: KeyboardKit
+      - package: Supabase
+        product: Supabase
 
   KeyboardExtension:
     type: app-extension
@@ -63,6 +74,7 @@ targets:
       - path: iOS/KeyboardExtension
         excludes:
           - Resources/Info.plist
+      - path: iOS/Shared
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.core7.bikey.KeyboardExtension
@@ -73,6 +85,8 @@ targets:
     dependencies:
       - package: KeyboardCore
         product: EnglishKeyboardCore
+      - package: KeyboardCore
+        product: KeyboardPreferences
       - package: KeyboardKit
         product: KeyboardKit
 

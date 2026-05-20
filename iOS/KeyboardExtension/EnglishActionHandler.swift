@@ -3,6 +3,7 @@ import KeyboardKit
 final class EnglishActionHandler: KeyboardAction.StandardActionHandler {
     private weak var englishController: KeyboardViewController?
 
+    @MainActor
     init(controller: KeyboardViewController) {
         self.englishController = controller
         super.init(
@@ -20,11 +21,26 @@ final class EnglishActionHandler: KeyboardAction.StandardActionHandler {
     }
 
     override func handle(_ gesture: Keyboard.Gesture, on action: KeyboardAction) {
+        if gesture == .release, case .custom(named: "longVowel") = action {
+            Task { @MainActor [weak englishController] in
+                englishController?.handleLongVowelAction()
+            }
+            return
+        }
+
         if gesture == .release, action == .space {
             Task { @MainActor [weak englishController] in
                 englishController?.handleSpaceAction()
             }
             return
+        }
+
+        if gesture == .release, case .primary = action {
+            let controller = englishController
+            let handled = MainActor.assumeIsolated {
+                controller?.handleReturnAction() == true
+            }
+            if handled { return }
         }
 
         super.handle(gesture, on: action)

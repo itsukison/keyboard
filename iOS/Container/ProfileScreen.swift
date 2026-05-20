@@ -1,57 +1,140 @@
-import KeyboardCore
+import KeyboardPreferences
 import SwiftUI
 import UIKit
 
 struct ProfileScreen: View {
     let scale: CGFloat
     let horizontalInset: CGFloat
-    let onShowOnboarding: () -> Void
+    @EnvironmentObject private var session: UserSession
+    @ObservedObject private var stats = ConversionStats.shared
     @State private var compositionDisplayMode = KeyboardSettingsStore.readCompositionDisplayMode()
+    @State private var lastConfirmedCompositionDisplayMode = KeyboardSettingsStore.readCompositionDisplayMode()
+    @State private var showPersonalInfo = false
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 0) {
-                ProfileTopControls(scale: scale)
-                    .padding(.top, 72 * scale)
+        NavigationStack {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 0) {
+                    ProfileTopControls(scale: scale)
+                        .padding(.top, 72 * scale)
 
-                ProfileCard(scale: scale)
-                    .padding(.top, 42 * scale)
+                    ProfileCard(scale: scale, displayName: session.displayName, stats: stats)
+                        .padding(.top, 42 * scale)
 
-                ProfileSectionTitle("Account", scale: scale)
-                    .padding(.top, 56 * scale)
+                    ProfileSectionTitle("Account", scale: scale)
+                        .padding(.top, 56 * scale)
 
-                ProfileListCard(
-                    rows: [
-                        .init(icon: "person", title: "Personal Information"),
-                        .init(
-                            icon: "character.cursor.ibeam",
-                            title: "Language Mode",
-                            toggle: .languageMode
-                        ),
-                        .init(
-                            icon: "sparkles",
-                            title: "View Onboarding",
-                            action: onShowOnboarding
-                        ),
-                        .init(icon: "crown", title: "Plan", trailing: "Bikey Pro"),
-                        .init(icon: "gift", title: "Invite a Friend")
-                    ],
-                    compositionDisplayMode: $compositionDisplayMode,
-                    scale: scale
-                )
-                .padding(.top, 17 * scale)
+                    ProfileListCard(
+                        rows: [
+                            .init(
+                                icon: "person",
+                                title: "Personal Information",
+                                action: { showPersonalInfo = true }
+                            ),
+                            .init(
+                                icon: "character.cursor.ibeam",
+                                title: "Language Mode",
+                                toggle: .languageMode
+                            ),
+                            .init(icon: "crown", title: "Plan", trailing: "Bikey Pro"),
+                            .init(icon: "gift", title: "Invite a Friend"),
+                            .init(
+                                icon: "rectangle.portrait.and.arrow.right",
+                                title: "Sign Out",
+                                action: { Task { await session.signOut() } }
+                            )
+                        ],
+                        compositionDisplayMode: $compositionDisplayMode,
+                        scale: scale
+                    )
+                    .padding(.top, 17 * scale)
 
-                Spacer(minLength: 178 * scale)
+                    Spacer(minLength: 178 * scale)
+                }
+                .padding(.horizontal, horizontalInset)
+                .frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, horizontalInset)
-            .frame(maxWidth: .infinity)
+            .navigationDestination(isPresented: $showPersonalInfo) {
+                PersonalInformationView(profile: session.profile, scale: scale)
+            }
+            .onAppear {
+                syncCompositionDisplayModeFromProfile()
+            }
+            .onChange(of: session.profile) { _ in
+                syncCompositionDisplayModeFromProfile()
+            }
+            .onChange(of: compositionDisplayMode) { newValue in
+                guard newValue != lastConfirmedCompositionDisplayMode else {
+                    KeyboardSettingsStore.writeCompositionDisplayMode(newValue)
+                    return
+                }
+                KeyboardSettingsStore.writeCompositionDisplayMode(newValue)
+                Task { @MainActor in
+                    do {
+                        try await session.updateCompositionDisplayMode(newValue)
+                        lastConfirmedCompositionDisplayMode = newValue
+                    } catch {
+                        let rollback = lastConfirmedCompositionDisplayMode
+                        KeyboardSettingsStore.writeCompositionDisplayMode(rollback)
+                        compositionDisplayMode = rollback
+                    }
+                }
+            }
         }
-        .onAppear {
-            compositionDisplayMode = KeyboardSettingsStore.readCompositionDisplayMode()
+    }
+
+    private func syncCompositionDisplayModeFromProfile() {
+        let mode = session.profile?.compositionDisplayMode
+            ?? KeyboardSettingsStore.readCompositionDisplayMode()
+        lastConfirmedCompositionDisplayMode = mode
+        compositionDisplayMode = mode
+        KeyboardSettingsStore.writeCompositionDisplayMode(mode)
+    }
+}
+
+private struct PersonalInformationView: View {
+    let profile: UserSession.Profile?
+    let scale: CGFloat
+
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .none
+        return f
+    }()
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20 * scale) {
+                infoRow(label: "Name", value: profile?.displayName ?? "—")
+                infoRow(label: "Email", value: profile?.email ?? "—")
+                infoRow(
+                    label: "Member since",
+                    value: profile.map { Self.dateFormatter.string(from: $0.createdAt) } ?? "—"
+                )
+            }
+            .padding(.horizontal, 32 * scale)
+            .padding(.top, 32 * scale)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .onChange(of: compositionDisplayMode) { newValue in
-            KeyboardSettingsStore.writeCompositionDisplayMode(newValue)
+        .background(AppColor.background.ignoresSafeArea())
+        .navigationTitle("Personal Information")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func infoRow(label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 6 * scale) {
+            Text(label)
+                .font(.system(size: 22 * scale, weight: .regular, design: .rounded))
+                .foregroundStyle(AppColor.muted)
+            Text(value)
+                .font(.system(size: 30 * scale, weight: .regular, design: .rounded))
+                .foregroundStyle(AppColor.ink)
         }
+        .padding(.vertical, 14 * scale)
+        .padding(.horizontal, 24 * scale)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white.opacity(0.86), in: RoundedRectangle(cornerRadius: 22 * scale, style: .continuous))
     }
 }
 
@@ -88,6 +171,8 @@ private struct ProfileCircleButton: View {
 
 private struct ProfileCard: View {
     let scale: CGFloat
+    let displayName: String
+    @ObservedObject var stats: ConversionStats
 
     var body: some View {
         ZStack {
@@ -100,7 +185,7 @@ private struct ProfileCard: View {
 
                     VStack(alignment: .leading, spacing: 8 * scale) {
                         HStack(spacing: 12 * scale) {
-                            Text("Kris Wu")
+                            Text(displayName.isEmpty ? "Bikey user" : displayName)
                                 .font(.system(size: 44 * scale, weight: .regular, design: .rounded))
                                 .foregroundStyle(.white)
                                 .lineLimit(1)
@@ -118,7 +203,7 @@ private struct ProfileCard: View {
                                 }
                         }
 
-                        Text("32,345 words typed\nwith Bikey")
+                        Text("\(stats.conversionsDisplay) conversions\nwith Bikey")
                             .font(.system(size: 26 * scale, weight: .regular, design: .rounded))
                             .foregroundStyle(.white.opacity(0.82))
                             .lineSpacing(7 * scale)
@@ -130,7 +215,7 @@ private struct ProfileCard: View {
                 HStack(spacing: 0) {
                     ProfileStat(value: "158", label: "WPM", scale: scale)
                     ProfileStat(value: "10", label: "Hours Saved", scale: scale)
-                    ProfileStat(value: "8", label: "Day Streak", scale: scale)
+                    ProfileStat(value: stats.streakDisplay, label: "Day Streak", scale: scale)
                 }
                 .padding(.top, 54 * scale)
 

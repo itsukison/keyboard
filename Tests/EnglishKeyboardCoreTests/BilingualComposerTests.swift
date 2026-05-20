@@ -1,4 +1,5 @@
 import XCTest
+import KeyboardPreferences
 @testable import EnglishKeyboardCore
 
 final class BilingualComposerTests: XCTestCase {
@@ -40,7 +41,21 @@ final class BilingualComposerTests: XCTestCase {
         let suggestions = composer.suggestions(beforeInput: "hashi")
 
         XCTAssertEqual(suggestions.map(\.replacementText), ["橋", "箸", "端", "はし"])
+        XCTAssertEqual(suggestions.map(\.kind), [.japanese, .japanese, .japanese, .japanese])
         XCTAssertEqual(suggestions.map(\.deleteCount), Array(repeating: "hashi".count, count: 4))
+    }
+
+    func testSuggestionSetSharesSingleConversionForKeepRawAndCandidates() {
+        let converter = MockJapaneseConverter(mapping: [
+            "はし": ["橋", "箸"],
+        ])
+        let composer = BilingualComposer(converter: converter)
+
+        let set = composer.suggestionSet(beforeInput: "hashi")
+
+        XCTAssertEqual(set.keepRaw?.replacementText, "hashi")
+        XCTAssertEqual(set.japanese.map(\.replacementText), ["橋", "箸"])
+        XCTAssertEqual(converter.convertCallCount, 1)
     }
 
     func testMixedSuggestionsPreviewWholeReplacement() {
@@ -57,21 +72,55 @@ final class BilingualComposerTests: XCTestCase {
         ])
     }
 
+    func testKeepRawSuggestionIsOfferedSeparatelyForConvertibleEnglishLookingWord() {
+        let classifier = BilingualLanguageClassifier(englishWords: [])
+        let composer = BilingualComposer(
+            classifier: classifier,
+            converter: MockJapaneseConverter(mapping: [
+                "ぃけ": ["ぃけ", "ィケ"],
+            ])
+        )
+
+        let suggestions = composer.suggestions(beforeInput: "like")
+        let keepRaw = composer.keepRawSuggestion(beforeInput: "like")
+
+        XCTAssertEqual(suggestions.map(\.replacementText), ["ぃけ", "ィケ"])
+        XCTAssertEqual(keepRaw?.replacementText, "like")
+        XCTAssertEqual(keepRaw?.kind, .keepRaw)
+    }
+
     func testEnglishTokenHasNoJapaneseSuggestions() {
         let composer = BilingualComposer(converter: MockJapaneseConverter(mapping: [:]))
 
         XCTAssertTrue(composer.suggestions(beforeInput: "meeting").isEmpty)
     }
+
+    func testEnglishHeavyDisplayModeDoesNotProduceToolbarPreview() {
+        let composer = BilingualComposer(converter: MockJapaneseConverter(mapping: [:]))
+
+        XCTAssertNil(composer.displayPreview(beforeInput: "korekara", displayMode: .balancedRaw))
+    }
+
+    func testJapaneseHeavyPreviewPreservesEmbeddedEnglish() {
+        let composer = BilingualComposer(converter: MockJapaneseConverter(mapping: [:]))
+
+        XCTAssertEqual(
+            composer.displayPreview(beforeInput: "kyounomeetingha3jini", displayMode: .japaneseHeavyKana),
+            "きょうのmeetingは3じに"
+        )
+    }
 }
 
 private final class MockJapaneseConverter: JapaneseCandidateConverting {
     let mapping: [String: [String]]
+    private(set) var convertCallCount = 0
 
     init(mapping: [String: [String]]) {
         self.mapping = mapping
     }
 
     func convert(_ input: JapaneseConversionInput) -> JapaneseConversionResult {
-        JapaneseConversionResult(input: input, candidates: mapping[input.kana] ?? [input.kana])
+        convertCallCount += 1
+        return JapaneseConversionResult(input: input, candidates: mapping[input.kana] ?? [input.kana])
     }
 }

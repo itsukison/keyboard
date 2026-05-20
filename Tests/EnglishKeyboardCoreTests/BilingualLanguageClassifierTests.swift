@@ -12,6 +12,7 @@ final class BilingualLanguageClassifierTests: XCTestCase {
         XCTAssertEqual(classifier.likelyLanguage(of: "meeting"), .english)
         XCTAssertEqual(classifier.likelyLanguage(of: "language"), .english)
         XCTAssertEqual(classifier.likelyLanguage(of: "type"), .english)
+        XCTAssertEqual(classifier.likelyLanguage(of: "like"), .english)
     }
 
     func testNoSpaceMixedRunSplitsKnownEnglishWord() {

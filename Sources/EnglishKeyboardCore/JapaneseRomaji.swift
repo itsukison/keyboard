@@ -131,4 +131,73 @@ public enum JapaneseRomaji {
     public static func toKana(_ raw: String) -> String {
         parse(raw).kana
     }
+
+    public static func toLiveKana(_ raw: String) -> String {
+        let chars = Array(raw.lowercased())
+        var index = 0
+        var output = ""
+
+        while index < chars.count {
+            let current = chars[index]
+            let next = index + 1 < chars.count ? chars[index + 1] : "\0"
+            let remaining = String(chars[index...])
+
+            if current == "-" {
+                output += "ー"
+                index += 1
+                continue
+            }
+            if current.isNumber {
+                output.append(current)
+                index += 1
+                continue
+            }
+            if current == "'", next != "\0" {
+                index += 1
+                continue
+            }
+            if current == "n", next == "'" || next == "n" {
+                output += "ん"
+                index += 2
+                continue
+            }
+            if remainingCouldBecomeKana(remaining) {
+                output += remaining
+                break
+            }
+            if current == "n", next != "\0", !vowels.contains(next), next != "y" {
+                output += "ん"
+                index += 1
+                continue
+            }
+            if consonants.contains(current), current == next, current != "n" {
+                output += "っ"
+                index += 1
+                continue
+            }
+
+            var matched = false
+            for length in [4, 3, 2, 1] where index + length <= chars.count {
+                let piece = String(chars[index ..< index + length])
+                if let kana = kanaTable[piece] {
+                    output += kana
+                    index += length
+                    matched = true
+                    break
+                }
+            }
+            if !matched {
+                output.append(current)
+                index += 1
+            }
+        }
+
+        return output
+    }
+
+    private static func remainingCouldBecomeKana(_ remaining: String) -> Bool {
+        guard !remaining.isEmpty else { return false }
+        guard kanaTable[remaining] == nil else { return false }
+        return kanaTable.keys.contains { $0.hasPrefix(remaining) }
+    }
 }

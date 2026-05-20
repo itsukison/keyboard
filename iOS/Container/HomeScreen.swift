@@ -20,6 +20,8 @@ enum AppColor {
 struct HomeScreen: View {
     let scale: CGFloat
     let horizontalInset: CGFloat
+    let viewportWidth: CGFloat
+    @ObservedObject var stats: ConversionStats
 
     private let recentItems: [RecentConversion] = [
         .init(
@@ -39,7 +41,7 @@ struct HomeScreen: View {
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 0) {
-                HeaderView(scale: scale)
+                HeaderView(scale: scale, stats: stats)
                     .padding(.top, 34 * scale)
 
                 KeyboardEnabledBanner(scale: scale)
@@ -63,22 +65,21 @@ struct HomeScreen: View {
 
                 Spacer(minLength: 178 * scale)
             }
-            .frame(maxWidth: .infinity)
+            .frame(width: max(0, viewportWidth - (horizontalInset * 2)))
             .padding(.horizontal, horizontalInset)
         }
-        .safeAreaInset(edge: .top) {
-            Color.clear.frame(height: 0)
-        }
+        .frame(maxWidth: .infinity)
     }
 }
 
 private struct HeaderView: View {
     let scale: CGFloat
+    @ObservedObject var stats: ConversionStats
 
     var body: some View {
         HStack(alignment: .center, spacing: 0) {
             HStack(spacing: 14 * scale) {
-                IconTile(systemName: "globe", scale: scale)
+                AppIconTile(scale: scale)
                     .frame(width: 56 * scale, height: 56 * scale)
 
                 Text("Bikey")
@@ -89,8 +90,8 @@ private struct HeaderView: View {
 
             Spacer(minLength: 16 * scale)
 
-            StatsPill(scale: scale)
-                .frame(width: 248 * scale, height: 86 * scale)
+            StatsPill(scale: scale, stats: stats)
+                .frame(width: 230 * scale, height: 86 * scale)
 
             PowerToggle(scale: scale)
                 .frame(width: 94 * scale, height: 58 * scale)
@@ -100,35 +101,57 @@ private struct HeaderView: View {
     }
 }
 
-private struct IconTile: View {
-    let systemName: String
+private struct AppIconTile: View {
     let scale: CGFloat
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 18 * scale, style: .continuous)
+        RoundedRectangle(cornerRadius: 14 * scale, style: .continuous)
             .fill(Color.white.opacity(0.9))
             .shadow(color: .black.opacity(0.05), radius: 12 * scale, x: 0, y: 6 * scale)
             .overlay {
-                Image(systemName: systemName)
-                    .font(.system(size: 30 * scale, weight: .regular))
-                    .foregroundStyle(AppColor.purple.opacity(0.72))
+                Group {
+                    if let image = Self.loadIcon() {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        Image(systemName: "globe")
+                            .font(.system(size: 30 * scale, weight: .regular))
+                            .foregroundStyle(AppColor.purple.opacity(0.72))
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 14 * scale, style: .continuous))
             }
+    }
+
+    private static func loadIcon() -> UIImage? {
+        if let url = Bundle.main.url(forResource: "newapp", withExtension: "png"),
+           let image = UIImage(contentsOfFile: url.path) {
+            return image
+        }
+        let sourceURL = URL(fileURLWithPath: #filePath)
+        let repoRoot = sourceURL
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        return UIImage(contentsOfFile: repoRoot.appendingPathComponent("public/newapp.png").path)
     }
 }
 
 private struct StatsPill: View {
     let scale: CGFloat
+    @ObservedObject var stats: ConversionStats
 
     var body: some View {
         HStack(spacing: 0) {
-            MetricColumn(value: "12,480", label: "conversions", scale: scale)
+            MetricColumn(value: stats.conversionsDisplay, label: "conversions", scale: scale)
                 .frame(maxWidth: .infinity)
 
             Rectangle()
                 .fill(AppColor.rule.opacity(0.62))
                 .frame(width: max(1, 1 * scale), height: 36 * scale)
 
-            MetricColumn(value: "8", label: "day streak", scale: scale)
+            MetricColumn(value: stats.streakDisplay, label: "day streak", scale: scale)
                 .frame(maxWidth: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
