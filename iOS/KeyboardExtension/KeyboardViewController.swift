@@ -77,7 +77,7 @@ final class KeyboardViewController: KeyboardInputViewController {
            currentTraits.allowsAutocorrection,
            proxy.selectedText?.isEmpty ?? true {
             if let cachedCommit = cachedJapaneseCommit(beforeInput: before, displayMode: displayMode) {
-                commitJapaneseReplacement(cachedCommit.replacementText, deleteCount: cachedCommit.deleteCount, appendSpace: false)
+                commitSuggestionReplacement(cachedCommit, beforeInput: before, appendSpace: false)
                 return
             }
             if let japaneseCommit = bilingualComposer.commitForSpace(beforeInput: before) {
@@ -97,7 +97,7 @@ final class KeyboardViewController: KeyboardInputViewController {
         if currentTraits.allowsAutocorrection,
            proxy.selectedText?.isEmpty ?? true {
             if let cachedCommit = cachedJapaneseCommit(beforeInput: before, displayMode: displayMode) {
-                commitJapaneseReplacement(cachedCommit.replacementText, deleteCount: cachedCommit.deleteCount, appendSpace: true)
+                commitSuggestionReplacement(cachedCommit, beforeInput: before, appendSpace: true)
                 return
             }
             if let japaneseCommit = bilingualComposer.commitForSpace(beforeInput: before) {
@@ -124,13 +124,22 @@ final class KeyboardViewController: KeyboardInputViewController {
         let displayMode = currentDisplayMode
         if displayMode.isJapaneseHeavy {
             if let cachedCommit = cachedJapaneseCommit(beforeInput: before, displayMode: displayMode) {
-                commitJapaneseReplacement(cachedCommit.replacementText, deleteCount: cachedCommit.deleteCount, appendSpace: false)
+                commitSuggestionReplacement(
+                    cachedCommit,
+                    beforeInput: before,
+                    appendSpace: false,
+                    rawDictionaryInsertsSpace: false
+                )
                 return true
             }
             guard let japaneseCommit = bilingualComposer.commitForSpace(beforeInput: before) else {
                 return false
             }
-            commitJapanese(japaneseCommit, appendSpace: false)
+            commitJapanese(
+                japaneseCommit,
+                appendSpace: false,
+                rawDictionaryInsertsSpace: false
+            )
             return true
         }
         guard let keepItem = keepRawSuggestion(beforeInput: before) else {
@@ -223,6 +232,8 @@ final class KeyboardViewController: KeyboardInputViewController {
 
     private func applySuggestion(_ item: SuggestionItem) {
         switch item.kind {
+        case .dictionary:
+            applyDictionarySuggestion(item)
         case .english:
             replaceTrailingWord(with: item.replacementText)
         case .keepRaw:
@@ -244,7 +255,30 @@ final class KeyboardViewController: KeyboardInputViewController {
         rawConfirmedContext = nil
     }
 
-    private func replaceTrailingConvertibleToken(with replacement: String, deleteCount: Int) {
+    private func applyDictionarySuggestion(_ item: SuggestionItem) {
+        guard let proxy = activeTextDocumentProxy else { return }
+        let before = proxy.documentContextBeforeInput ?? ""
+        let rawToken = BilingualComposer.trailingConvertibleToken(in: before)
+        guard rawToken.count == item.deleteCount else {
+            refreshSuggestionsAfterInput()
+            return
+        }
+        if item.replacementText == rawToken {
+            confirmRawContext(before)
+        } else {
+            replaceTrailingConvertibleToken(
+                with: item.replacementText,
+                deleteCount: item.deleteCount,
+                recordConversion: true
+            )
+        }
+    }
+
+    private func replaceTrailingConvertibleToken(
+        with replacement: String,
+        deleteCount: Int,
+        recordConversion: Bool = true
+    ) {
         guard let proxy = activeTextDocumentProxy else { return }
         let before = proxy.documentContextBeforeInput ?? ""
         guard BilingualComposer.trailingConvertibleToken(in: before).count == deleteCount else {
@@ -253,25 +287,79 @@ final class KeyboardViewController: KeyboardInputViewController {
         }
         deleteCharacters(deleteCount)
         proxy.insertText(replacement)
-        ConversionStats.shared.recordJapaneseConversion()
+        if recordConversion {
+            ConversionStats.shared.recordJapaneseConversion()
+        }
         cancelPendingJapaneseSuggestions()
         suggestions.clear()
         setKeepReturnKeyActive(false)
         rawConfirmedContext = nil
     }
 
-    private func commitJapanese(_ commit: BilingualCommit, appendSpace: Bool) {
-        commitJapaneseReplacement(commit.replacementText, deleteCount: commit.deleteCount, appendSpace: appendSpace)
+    private func commitJapanese(
+        _ commit: BilingualCommit,
+        appendSpace: Bool,
+        rawDictionaryInsertsSpace: Bool = true
+    ) {
+        if commit.kind == .dictionary, commit.replacementText == commit.rawToken {
+            commitRawDictionary(shouldInsertSpace: rawDictionaryInsertsSpace)
+        } else {
+            commitJapaneseReplacement(
+                commit.replacementText,
+                deleteCount: commit.deleteCount,
+                appendSpace: appendSpace,
+                recordConversion: true
+            )
+        }
     }
 
-    private func commitJapaneseReplacement(_ replacementText: String, deleteCount: Int, appendSpace: Bool) {
+    private func commitSuggestionReplacement(
+        _ item: SuggestionItem,
+        beforeInput context: String,
+        appendSpace: Bool,
+        rawDictionaryInsertsSpace: Bool = true
+    ) {
+        let rawToken = BilingualComposer.trailingConvertibleToken(in: context)
+        if item.kind == .dictionary, item.replacementText == rawToken {
+            commitRawDictionary(shouldInsertSpace: rawDictionaryInsertsSpace, context: context)
+        } else {
+            commitJapaneseReplacement(
+                item.replacementText,
+                deleteCount: item.deleteCount,
+                appendSpace: appendSpace,
+                recordConversion: true
+            )
+        }
+    }
+
+    private func commitRawDictionary(shouldInsertSpace: Bool, context: String? = nil) {
+        if !shouldInsertSpace {
+            confirmRawContext(context ?? activeTextDocumentProxy?.documentContextBeforeInput ?? "")
+            return
+        }
+        guard let proxy = activeTextDocumentProxy else { return }
+        proxy.insertText(" ")
+        cancelPendingJapaneseSuggestions()
+        suggestions.clear()
+        setKeepReturnKeyActive(false)
+        rawConfirmedContext = nil
+    }
+
+    private func commitJapaneseReplacement(
+        _ replacementText: String,
+        deleteCount: Int,
+        appendSpace: Bool,
+        recordConversion: Bool
+    ) {
         guard let proxy = activeTextDocumentProxy else { return }
         deleteCharacters(deleteCount)
         proxy.insertText(replacementText)
         if appendSpace {
             proxy.insertText(" ")
         }
-        ConversionStats.shared.recordJapaneseConversion()
+        if recordConversion {
+            ConversionStats.shared.recordJapaneseConversion()
+        }
         cancelPendingJapaneseSuggestions()
         suggestions.clear()
         setKeepReturnKeyActive(false)
@@ -281,13 +369,13 @@ final class KeyboardViewController: KeyboardInputViewController {
     private func cachedJapaneseCommit(
         beforeInput context: String,
         displayMode: CompositionDisplayMode
-    ) -> (replacementText: String, deleteCount: Int)? {
+    ) -> SuggestionItem? {
         guard cachedJapaneseSuggestionContext == context,
               cachedJapaneseSuggestionMode == displayMode,
-              let item = cachedJapaneseSuggestionItems.first(where: { $0.kind == .japanese }) else {
+              let item = cachedJapaneseSuggestionItems.first(where: { $0.kind == .dictionary || $0.kind == .japanese }) else {
             return nil
         }
-        return (item.replacementText, item.deleteCount)
+        return item
     }
 
     private func confirmRawSuggestion(_ item: SuggestionItem) {
@@ -351,7 +439,7 @@ final class KeyboardViewController: KeyboardInputViewController {
                 title: $0.replacementText,
                 replacementText: $0.replacementText,
                 deleteCount: $0.deleteCount,
-                kind: .japanese
+                kind: $0.kind == .dictionary ? .dictionary : .japanese
             )
         }
         if displayMode.isJapaneseHeavy,

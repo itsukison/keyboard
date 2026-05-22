@@ -123,6 +123,10 @@ come	20
 comes	8
 came	15
 coming	10
+arrive	12
+arrives	5
+arrived	8
+arriving	5
 see	25
 sees	8
 saw	15

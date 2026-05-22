@@ -1,447 +1,468 @@
 import SwiftUI
 import UIKit
 
-enum HomeDesign {
-    static let designWidth: CGFloat = 863
-    static let designHeight: CGFloat = 1822
-}
-
-enum AppColor {
-    static let background = Color(red: 0.984, green: 0.981, blue: 0.976)
-    static let ink = Color(red: 0.129, green: 0.129, blue: 0.155)
-    static let muted = Color(red: 0.469, green: 0.462, blue: 0.522)
-    static let softText = Color(red: 0.636, green: 0.630, blue: 0.735)
-    static let purple = Color(red: 0.341, green: 0.258, blue: 0.656)
-    static let lavender = Color(red: 0.917, green: 0.900, blue: 0.973)
-    static let paleLavender = Color(red: 0.950, green: 0.937, blue: 0.986)
-    static let rule = Color(red: 0.805, green: 0.804, blue: 0.803)
-}
-
 struct HomeScreen: View {
-    let scale: CGFloat
-    let horizontalInset: CGFloat
-    let viewportWidth: CGFloat
-    @ObservedObject var stats: ConversionStats
+    @ObservedObject private var stats = ConversionStats.shared
+    @State private var showDemo = false
 
-    private let recentItems: [RecentConversion] = [
+    private let tips: [Tip] = [
         .init(
-            dayLabel: "Today",
+            label: "Mix freely",
+            title: "Japanese + English in one sentence",
             sourceText: "kyouno meeting ha 3ji",
-            convertedText: "今日の meeting は 3時",
-            timeText: "4:15 p.m."
+            convertedText: "今日の meeting は 3時"
         ),
         .init(
-            dayLabel: "Today",
-            sourceText: "korekara we can go",
-            convertedText: "これから we can go",
-            timeText: "2:40 p.m."
+            label: "No spaces needed",
+            title: "Long romaji runs convert as one",
+            sourceText: "hashiwowatarumaenitaberu",
+            convertedText: "橋を渡る前に食べる"
+        ),
+        .init(
+            label: "Save your phrases",
+            title: "Add custom replacements in Phrases",
+            sourceText: "omtg",
+            convertedText: "お疲れさまです"
         )
     ]
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 0) {
-                HeaderView(scale: scale, stats: stats)
-                    .padding(.top, 34 * scale)
+                HomeHeader(stats: stats)
+                    .padding(.top, BikeyMetrics.Spacing.s)
 
-                KeyboardEnabledBanner(scale: scale)
-                    .padding(.top, 26 * scale)
+                KeyboardEnabledBanner()
+                    .padding(.top, BikeyMetrics.Spacing.m)
 
-                HeroCard(scale: scale)
-                    .padding(.top, 22 * scale)
+                HeroCard(onTryDemo: { showDemo = true })
+                    .padding(.top, BikeyMetrics.Spacing.m - 2)
 
-                PageDots(scale: scale)
-                    .padding(.top, 18 * scale)
+                TipsHeader(title: "Tips")
+                    .padding(.top, BikeyMetrics.Spacing.m)
 
-                RecentHeader(scale: scale)
-                    .padding(.top, 30 * scale)
-
-                VStack(spacing: 20 * scale) {
-                    ForEach(recentItems) { item in
-                        RecentConversionCard(item: item, scale: scale)
+                VStack(spacing: BikeyMetrics.Spacing.m - 2) {
+                    ForEach(tips) { tip in
+                        TipCard(tip: tip)
                     }
                 }
-                .padding(.top, 18 * scale)
+                .padding(.top, BikeyMetrics.Spacing.s + 2)
 
-                Spacer(minLength: 178 * scale)
+                Spacer(minLength: BikeyMetrics.Sizing.tabBarHeight + 32)
             }
-            .frame(width: max(0, viewportWidth - (horizontalInset * 2)))
-            .padding(.horizontal, horizontalInset)
+            .padding(.horizontal, BikeyMetrics.Sizing.screenHorizontalInset)
         }
         .frame(maxWidth: .infinity)
+        .background(AppColor.background.ignoresSafeArea())
+        .sheet(isPresented: $showDemo) {
+            BikeyDemoSheet()
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.hidden)
+                .presentationCornerRadius(32)
+                .presentationBackground(AppColor.background)
+        }
     }
 }
 
-private struct HeaderView: View {
-    let scale: CGFloat
+// MARK: - Header
+
+private struct HomeHeader: View {
     @ObservedObject var stats: ConversionStats
 
     var body: some View {
-        HStack(alignment: .center, spacing: 0) {
-            HStack(spacing: 14 * scale) {
-                AppIconTile(scale: scale)
-                    .frame(width: 56 * scale, height: 56 * scale)
+        HStack(alignment: .center, spacing: BikeyMetrics.Spacing.s + 2) {
+            HStack(spacing: BikeyMetrics.Spacing.s - 1) {
+                AppLogoTile()
+                    .frame(width: 26, height: 26)
 
                 Text("Bikey")
-                    .font(.system(size: 34 * scale, weight: .regular, design: .rounded))
+                    .bikeyFont(20, weight: .medium, relativeTo: .title3)
                     .foregroundStyle(AppColor.ink)
-                    .minimumScaleFactor(0.8)
             }
 
-            Spacer(minLength: 16 * scale)
+            Spacer(minLength: BikeyMetrics.Spacing.s)
 
-            StatsPill(scale: scale, stats: stats)
-                .frame(width: 230 * scale, height: 86 * scale)
-
-            PowerToggle(scale: scale)
-                .frame(width: 94 * scale, height: 58 * scale)
-                .padding(.leading, 14 * scale)
+            StatsPill(stats: stats)
         }
-        .frame(height: 88 * scale)
+        .frame(height: 40)
     }
 }
 
-private struct AppIconTile: View {
-    let scale: CGFloat
-
+private struct AppLogoTile: View {
     var body: some View {
-        RoundedRectangle(cornerRadius: 14 * scale, style: .continuous)
-            .fill(Color.white.opacity(0.9))
-            .shadow(color: .black.opacity(0.05), radius: 12 * scale, x: 0, y: 6 * scale)
+        RoundedRectangle(cornerRadius: 7, style: .continuous)
+            .fill(AppColor.paleLavender)
             .overlay {
                 Group {
-                    if let image = Self.loadIcon() {
+                    if let image = BundledImage.load("applogo") {
                         Image(uiImage: image)
                             .resizable()
                             .scaledToFill()
                     } else {
                         Image(systemName: "globe")
-                            .font(.system(size: 30 * scale, weight: .regular))
+                            .font(.system(size: 14, weight: .regular))
                             .foregroundStyle(AppColor.purple.opacity(0.72))
                     }
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 14 * scale, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
             }
-    }
-
-    private static func loadIcon() -> UIImage? {
-        if let url = Bundle.main.url(forResource: "newapp", withExtension: "png"),
-           let image = UIImage(contentsOfFile: url.path) {
-            return image
-        }
-        let sourceURL = URL(fileURLWithPath: #filePath)
-        let repoRoot = sourceURL
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-        return UIImage(contentsOfFile: repoRoot.appendingPathComponent("public/newapp.png").path)
     }
 }
 
 private struct StatsPill: View {
-    let scale: CGFloat
     @ObservedObject var stats: ConversionStats
 
     var body: some View {
         HStack(spacing: 0) {
-            MetricColumn(value: stats.conversionsDisplay, label: "conversions", scale: scale)
+            MetricColumn(value: stats.conversionsDisplay, label: "conversions")
                 .frame(maxWidth: .infinity)
 
             Rectangle()
-                .fill(AppColor.rule.opacity(0.62))
-                .frame(width: max(1, 1 * scale), height: 36 * scale)
+                .fill(AppColor.rule.opacity(0.6))
+                .frame(width: 0.6, height: 18)
 
-            MetricColumn(value: stats.streakDisplay, label: "day streak", scale: scale)
+            MetricColumn(value: stats.streakDisplay, label: "day streak")
                 .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.white.opacity(0.76), in: Capsule())
-        .shadow(color: .black.opacity(0.055), radius: 20 * scale, x: 0, y: 8 * scale)
+        .padding(.horizontal, 10)
+        .frame(width: 132, height: 38)
+        .background(.white, in: Capsule())
+        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 3)
     }
 }
 
 private struct MetricColumn: View {
     let value: String
     let label: String
-    let scale: CGFloat
 
     var body: some View {
-        VStack(spacing: 1 * scale) {
+        VStack(spacing: 0) {
             Text(value)
-                .font(.system(size: 26 * scale, weight: .medium, design: .rounded))
+                .bikeyFont(13, weight: .medium, relativeTo: .footnote)
                 .foregroundStyle(AppColor.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
 
             Text(label)
-                .font(.system(size: 18 * scale, weight: .regular, design: .rounded))
-                .foregroundStyle(Color(red: 0.554, green: 0.548, blue: 0.604))
+                .bikeyFont(9, weight: .regular, relativeTo: .caption2)
+                .foregroundStyle(AppColor.muted)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
         }
     }
 }
 
-private struct PowerToggle: View {
-    let scale: CGFloat
-
-    var body: some View {
-        Capsule()
-            .fill(
-                LinearGradient(
-                    colors: [AppColor.purple, Color(red: 0.438, green: 0.305, blue: 0.764)],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .overlay(alignment: .trailing) {
-                Circle()
-                    .fill(.white)
-                    .frame(width: 44 * scale, height: 44 * scale)
-                    .padding(.trailing, 7 * scale)
-                    .shadow(color: .black.opacity(0.08), radius: 5 * scale, x: 0, y: 2 * scale)
-            }
-    }
-}
+// MARK: - Enabled banner
 
 private struct KeyboardEnabledBanner: View {
-    let scale: CGFloat
-
     var body: some View {
-        HStack(spacing: 18 * scale) {
-            RoundedRectangle(cornerRadius: 12 * scale, style: .continuous)
-                .fill(AppColor.paleLavender)
-                .frame(width: 44 * scale, height: 44 * scale)
-                .overlay {
-                    Image(systemName: "keyboard")
-                        .font(.system(size: 20 * scale, weight: .regular))
-                        .foregroundStyle(AppColor.purple.opacity(0.76))
-                }
+        HStack(spacing: BikeyMetrics.Spacing.s + 2) {
+            Image(systemName: "keyboard")
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(AppColor.purple.opacity(0.76))
 
             Text("Bikey keyboard enabled")
-                .font(.system(size: 29 * scale, weight: .regular, design: .rounded))
-                .foregroundStyle(AppColor.ink.opacity(0.9))
+                .bikeyFont(13, weight: .regular, relativeTo: .footnote)
+                .foregroundStyle(AppColor.ink.opacity(0.78))
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 26 * scale)
-        .frame(height: 86 * scale)
-        .background(AppColor.paleLavender.opacity(0.72), in: RoundedRectangle(cornerRadius: 30 * scale, style: .continuous))
+        .padding(.horizontal, BikeyMetrics.Spacing.m - 2)
+        .frame(height: 38)
+        .frame(maxWidth: .infinity)
+        .background(AppColor.paleLavender.opacity(0.85), in: Capsule())
     }
 }
 
+// MARK: - Hero card
+
 private struct HeroCard: View {
-    let scale: CGFloat
+    let onTryDemo: () -> Void
 
     var body: some View {
         ZStack {
             HeroBackgroundImage()
-                .scaleEffect(1.12)
-                .overlay(Color.white.opacity(0.30))
 
             VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 14 * scale) {
-                        Text("Type naturally in\ntwo languages")
-                            .font(.system(size: 62 * scale, weight: .regular, design: .rounded))
-                            .foregroundStyle(AppColor.ink.opacity(0.94))
-                            .lineSpacing(4 * scale)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Type naturally in\ntwo languages")
+                        .bikeyFont(24, weight: .regular, relativeTo: .title2)
+                        .foregroundStyle(AppColor.ink.opacity(0.92))
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                        Text("Japanese + English, no\nkeyboard switching.")
-                            .font(.system(size: 33 * scale, weight: .regular, design: .rounded))
-                            .foregroundStyle(AppColor.muted)
-                            .lineSpacing(8 * scale)
-                    }
-
-                    Spacer(minLength: 0)
+                    Text("Japanese + English, no\nkeyboard switching.")
+                        .bikeyFont(13, weight: .regular, relativeTo: .footnote)
+                        .foregroundStyle(AppColor.muted)
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
-                Spacer(minLength: 0)
+                Spacer(minLength: BikeyMetrics.Spacing.m)
 
-                HStack(alignment: .center, spacing: 24 * scale) {
-                    ConversionPreviewPill(scale: scale)
-                        .frame(height: 150 * scale)
+                HStack(alignment: .center, spacing: BikeyMetrics.Spacing.s + 2) {
+                    ConversionPreviewPill()
 
-                    Spacer(minLength: 0)
-
-                    Text("Try demo")
-                        .font(.system(size: 34 * scale, weight: .medium, design: .rounded))
-                        .foregroundStyle(.white)
-                        .frame(width: 200 * scale, height: 86 * scale)
-                        .background(Color(red: 0.151, green: 0.152, blue: 0.187), in: Capsule())
+                    TryDemoButton(action: onTryDemo)
                 }
             }
-            .padding(.horizontal, 48 * scale)
-            .padding(.vertical, 44 * scale)
+            .padding(.horizontal, BikeyMetrics.Spacing.l - 4)
+            .padding(.vertical, BikeyMetrics.Spacing.l - 4)
         }
-        .frame(height: 540 * scale)
-        .clipShape(RoundedRectangle(cornerRadius: 40 * scale, style: .continuous))
-        .shadow(color: .black.opacity(0.05), radius: 22 * scale, x: 0, y: 10 * scale)
-    }
-}
-
-private struct ConversionPreviewPill: View {
-    let scale: CGFloat
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10 * scale) {
-            Text("kyouno meeting ha 3ji")
-                .font(.system(size: 31 * scale, weight: .regular, design: .rounded))
-                .foregroundStyle(AppColor.ink)
-                .lineLimit(1)
-                .minimumScaleFactor(0.74)
-
-            HStack(spacing: 10 * scale) {
-                Image(systemName: "arrow.turn.down.right")
-                    .font(.system(size: 20 * scale, weight: .regular))
-                    .foregroundStyle(AppColor.softText)
-
-                Text("今日の meeting は 3時")
-                    .font(.system(size: 31 * scale, weight: .regular, design: .rounded))
-                    .foregroundStyle(AppColor.ink)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.74)
-            }
-        }
-        .padding(.horizontal, 22 * scale)
-        .padding(.vertical, 22 * scale)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.white.opacity(0.85), in: RoundedRectangle(cornerRadius: 28 * scale, style: .continuous))
-    }
-}
-
-private struct PageDots: View {
-    let scale: CGFloat
-
-    var body: some View {
-        HStack(spacing: 15 * scale) {
-            ForEach(0..<4, id: \.self) { index in
-                Circle()
-                    .fill(index == 0 ? AppColor.ink.opacity(0.9) : AppColor.rule)
-                    .frame(width: 10 * scale, height: 10 * scale)
-            }
-        }
+        .frame(height: 220)
+        .clipShape(RoundedRectangle(cornerRadius: BikeyMetrics.Radius.hero - 8, style: .continuous))
+        .shadow(color: .black.opacity(0.05), radius: 14, x: 0, y: 6)
     }
 }
 
 private struct HeroBackgroundImage: View {
     var body: some View {
-        if let image = loadHeroImage() {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .clipped()
-        } else {
-            LinearGradient(
-                colors: [
-                    Color(red: 0.878, green: 0.854, blue: 0.958),
-                    Color(red: 0.976, green: 0.966, blue: 0.993)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+        Group {
+            if let image = BundledImage.load("globebg") {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .scaleEffect(1.12)
+            } else {
+                LinearGradient(
+                    colors: [
+                        AppColor.lavender,
+                        AppColor.paleLavender
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
         }
-    }
-
-    private func loadHeroImage() -> UIImage? {
-        if let url = Bundle.main.url(forResource: "background", withExtension: "png"),
-           let image = UIImage(contentsOfFile: url.path) {
-            return image
-        }
-
-        let sourceURL = URL(fileURLWithPath: #filePath)
-        let repoRoot = sourceURL
-            .deletingLastPathComponent() // Container
-            .deletingLastPathComponent() // iOS
-            .deletingLastPathComponent() // repo root
-        return UIImage(contentsOfFile: repoRoot.appendingPathComponent("public/background.png").path)
     }
 }
 
-private struct RecentHeader: View {
-    let scale: CGFloat
+private struct ConversionPreviewPill: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text("kyouno meeting ha 3ji")
+                .bikeyFont(13, weight: .regular, relativeTo: .footnote)
+                .foregroundStyle(AppColor.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.turn.down.right")
+                    .font(.system(size: 9, weight: .regular))
+                    .foregroundStyle(AppColor.softText)
+
+                Text("今日の meeting は 3時")
+                    .bikeyFont(13, weight: .regular, relativeTo: .footnote)
+                    .foregroundStyle(AppColor.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+            }
+        }
+        .padding(.horizontal, BikeyMetrics.Spacing.s + 4)
+        .padding(.vertical, BikeyMetrics.Spacing.s + 1)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white.opacity(0.92), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+
+private struct TryDemoButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text("Try demo")
+                .bikeyFont(13, weight: .medium, relativeTo: .footnote)
+                .foregroundStyle(.white)
+                .padding(.horizontal, BikeyMetrics.Spacing.m)
+                .frame(height: 38)
+                .background(AppColor.charcoalAction, in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Try Bikey demo")
+    }
+}
+
+// MARK: - Tips
+
+private struct TipsHeader: View {
+    let title: String
 
     var body: some View {
         HStack {
-            Text("Recent conversions")
-                .font(.system(size: 32 * scale, weight: .regular, design: .rounded))
-                .foregroundStyle(Color(red: 0.445, green: 0.438, blue: 0.489))
-                .lineLimit(1)
+            Text(title)
+                .bikeyFont(15, weight: .regular, relativeTo: .subheadline)
+                .foregroundStyle(AppColor.muted)
 
             Spacer()
-
-            Circle()
-                .fill(.white.opacity(0.62))
-                .frame(width: 76 * scale, height: 76 * scale)
-                .overlay {
-                    Image(systemName: "slider.horizontal.3")
-                        .font(.system(size: 29 * scale, weight: .regular))
-                        .foregroundStyle(Color(red: 0.430, green: 0.424, blue: 0.500))
-                }
-                .shadow(color: .black.opacity(0.04), radius: 16 * scale, x: 0, y: 8 * scale)
         }
-        .frame(height: 70 * scale)
-        .padding(.horizontal, 10 * scale)
+        .padding(.horizontal, 2)
     }
 }
 
-private struct RecentConversion: Identifiable {
+private struct Tip: Identifiable {
     let id = UUID()
-    let dayLabel: String
+    let label: String
+    let title: String
     let sourceText: String
     let convertedText: String
-    let timeText: String
 }
 
-private struct RecentConversionCard: View {
-    let item: RecentConversion
-    let scale: CGFloat
+private struct TipCard: View {
+    let tip: Tip
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top, spacing: 20 * scale) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(item.dayLabel)
-                        .font(.system(size: 24 * scale, weight: .regular, design: .rounded))
-                        .foregroundStyle(AppColor.muted)
+        HStack(alignment: .top, spacing: BikeyMetrics.Spacing.m - 4) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(tip.label)
+                    .bikeyFont(11, weight: .regular, relativeTo: .caption)
+                    .foregroundStyle(AppColor.purple.opacity(0.78))
 
-                    Text(item.sourceText)
-                        .font(.system(size: 43 * scale, weight: .regular, design: .rounded))
-                        .foregroundStyle(AppColor.ink)
-                        .padding(.top, 20 * scale)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.72)
+                Text(tip.title)
+                    .bikeyFont(15, weight: .medium, relativeTo: .body)
+                    .foregroundStyle(AppColor.ink)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.84)
+                    .padding(.top, 2)
 
-                    Text(item.convertedText)
-                        .font(.system(size: 38 * scale, weight: .regular, design: .rounded))
+                HStack(spacing: 6) {
+                    Text(tip.sourceText)
+                        .bikeyFont(13, weight: .regular, relativeTo: .footnote)
                         .foregroundStyle(AppColor.softText)
-                        .padding(.top, 14 * scale)
                         .lineLimit(1)
                         .minimumScaleFactor(0.72)
 
-                    Text(item.timeText)
-                        .font(.system(size: 27 * scale, weight: .regular, design: .rounded))
-                        .foregroundStyle(AppColor.muted.opacity(0.8))
-                        .padding(.top, 22 * scale)
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundStyle(AppColor.softText.opacity(0.8))
+
+                    Text(tip.convertedText)
+                        .bikeyFont(13, weight: .regular, relativeTo: .footnote)
+                        .foregroundStyle(AppColor.ink.opacity(0.82))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
                 }
+                .padding(.top, 6)
+            }
 
-                Spacer(minLength: 0)
+            Spacer(minLength: 0)
 
-                Circle()
-                    .fill(AppColor.paleLavender.opacity(0.86))
-                    .frame(width: 64 * scale, height: 64 * scale)
-                    .overlay {
-                        Image(systemName: "doc.on.doc")
-                            .font(.system(size: 27 * scale, weight: .regular))
-                            .foregroundStyle(AppColor.purple.opacity(0.54))
+            Image(systemName: "lightbulb")
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(AppColor.purple.opacity(0.6))
+                .frame(width: 32, height: 32)
+                .background(AppColor.paleLavender.opacity(0.92), in: Circle())
+        }
+        .padding(.horizontal, BikeyMetrics.Spacing.m)
+        .padding(.vertical, BikeyMetrics.Spacing.m - 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white, in: RoundedRectangle(cornerRadius: BikeyMetrics.Radius.largeCard, style: .continuous))
+        .shadow(color: .black.opacity(0.04), radius: 14, x: 0, y: 6)
+    }
+}
+
+// MARK: - Demo sheet
+
+private struct BikeyDemoSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Done")
+                        .bikeyFont(15, weight: .medium, relativeTo: .body)
+                        .foregroundStyle(AppColor.ink)
+                        .padding(.horizontal, 22)
+                        .padding(.vertical, 10)
+                        .background(.white, in: Capsule())
+                        .shadow(color: .black.opacity(0.05), radius: 6, x: 0, y: 3)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, BikeyMetrics.Spacing.m)
+            .padding(.top, BikeyMetrics.Spacing.m)
+
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: BikeyMetrics.Spacing.l) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Try Bikey")
+                            .bikeyFont(24, weight: .medium, relativeTo: .title2)
+                            .foregroundStyle(AppColor.ink)
+
+                        Text("Tap the field below, then long-press the 🌐 globe key and choose Bikey. Type mixed romaji like kyounomeetingha3jini to see it convert.")
+                            .bikeyFont(14, weight: .regular, relativeTo: .footnote)
+                            .foregroundStyle(AppColor.muted)
+                            .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    .padding(.top, 44 * scale)
+
+                    DemoTextField(text: $text, isFocused: $isFocused)
+
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, BikeyMetrics.Spacing.l)
+                .padding(.top, BikeyMetrics.Spacing.xl)
+                .padding(.bottom, BikeyMetrics.Spacing.l)
+            }
+            .scrollDismissesKeyboard(.interactively)
+        }
+        .background(AppColor.background.ignoresSafeArea())
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                isFocused = true
             }
         }
-        .padding(.horizontal, 34 * scale)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 270 * scale)
-        .background(.white.opacity(0.9), in: RoundedRectangle(cornerRadius: 36 * scale, style: .continuous))
-        .shadow(color: .black.opacity(0.04), radius: 20 * scale, x: 0, y: 10 * scale)
+    }
+}
+
+private struct DemoTextField: View {
+    @Binding var text: String
+    var isFocused: FocusState<Bool>.Binding
+
+    var body: some View {
+        TextField("kyounomeetingha3jini", text: $text, axis: .vertical)
+            .focused(isFocused)
+            .bikeyFont(16, weight: .regular, relativeTo: .body)
+            .foregroundStyle(AppColor.ink)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .lineLimit(5...12)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+            .frame(maxWidth: .infinity, minHeight: 160, alignment: .topLeading)
+            .background(.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(
+                        isFocused.wrappedValue ? AppColor.ink.opacity(0.18) : AppColor.rule.opacity(0.25),
+                        lineWidth: isFocused.wrappedValue ? 1 : 0.6
+                    )
+            )
+            .animation(.easeInOut(duration: 0.18), value: isFocused.wrappedValue)
+            .contentShape(Rectangle())
+            .onTapGesture { isFocused.wrappedValue = true }
+    }
+}
+
+// MARK: - Bundled image loader
+
+private enum BundledImage {
+    static func load(_ name: String) -> UIImage? {
+        if let url = Bundle.main.url(forResource: name, withExtension: "png"),
+           let image = UIImage(contentsOfFile: url.path) {
+            return image
+        }
+        let sourceURL = URL(fileURLWithPath: #filePath)
+        let repoRoot = sourceURL
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        return UIImage(contentsOfFile: repoRoot.appendingPathComponent("public/\(name).png").path)
     }
 }

@@ -2,29 +2,38 @@ import Foundation
 import KeyboardPreferences
 
 public struct BilingualCommit: Equatable, Sendable {
+    public enum Kind: Equatable, Sendable {
+        case dictionary
+        case japanese
+    }
+
     public let rawToken: String
     public let replacementText: String
     public let deleteCount: Int
     public let candidates: [String]
     public let spans: [BilingualSpan]
+    public let kind: Kind
 
     public init(
         rawToken: String,
         replacementText: String,
         deleteCount: Int,
         candidates: [String],
-        spans: [BilingualSpan]
+        spans: [BilingualSpan],
+        kind: Kind = .japanese
     ) {
         self.rawToken = rawToken
         self.replacementText = replacementText
         self.deleteCount = deleteCount
         self.candidates = candidates
         self.spans = spans
+        self.kind = kind
     }
 }
 
 public struct BilingualSuggestion: Equatable, Sendable {
     public enum Kind: Equatable, Sendable {
+        case dictionary
         case keepRaw
         case japanese
     }
@@ -61,10 +70,14 @@ public final class BilingualComposer {
     private let classifier: BilingualLanguageClassifier
     private let displayClassifier: BilingualLanguageClassifier
     private let converter: JapaneseCandidateConverting
+    private let dictionaryEntries: @Sendable () -> [UserDictionaryEntry]
 
     public init(
         classifier: BilingualLanguageClassifier = .init(),
-        converter: JapaneseCandidateConverting
+        converter: JapaneseCandidateConverting,
+        dictionaryEntries: @escaping @Sendable () -> [UserDictionaryEntry] = {
+            UserDictionaryStore.readEntries()
+        }
     ) {
         self.classifier = classifier
         self.displayClassifier = BilingualLanguageClassifier(
@@ -72,9 +85,22 @@ public final class BilingualComposer {
             embeddedEnglishMinimumWordLength: 5
         )
         self.converter = converter
+        self.dictionaryEntries = dictionaryEntries
     }
 
     public func commitForSpace(beforeInput context: String) -> BilingualCommit? {
+        let token = Self.trailingConvertibleToken(in: context)
+        if let entry = dictionaryEntry(for: token) {
+            return BilingualCommit(
+                rawToken: token,
+                replacementText: entry.replacementText,
+                deleteCount: token.count,
+                candidates: [entry.replacementText],
+                spans: [],
+                kind: .dictionary
+            )
+        }
+
         guard let analysis = analyze(beforeInput: context) else { return nil }
         guard analysis.primaryReplacement != analysis.rawToken else { return nil }
         return BilingualCommit(
@@ -95,31 +121,56 @@ public final class BilingualComposer {
     }
 
     public func suggestionSet(beforeInput context: String) -> BilingualSuggestionSet {
-        guard let analysis = analyze(beforeInput: context) else {
+        let token = Self.trailingConvertibleToken(in: context)
+        guard token.count >= 2 else {
             return BilingualSuggestionSet(keepRaw: nil, japanese: [])
         }
-        var seen: Set<String> = []
-        var suggestions: [BilingualSuggestion] = []
-        seen.insert(analysis.rawToken)
-
-        for candidate in analysis.firstJapaneseCandidates where !candidate.isEmpty {
-            let replacement = analysis.replacement(firstJapaneseCandidate: candidate)
-            guard seen.insert(replacement).inserted else { continue }
-            suggestions.append(BilingualSuggestion(
-                rawToken: analysis.rawToken,
-                replacementText: replacement,
-                deleteCount: analysis.rawToken.count,
-                kind: .japanese
-            ))
-            if suggestions.count >= 8 { break }
+        let dictionaryEntry = dictionaryEntry(for: token)
+        let analysis = analyze(beforeInput: context)
+        guard dictionaryEntry != nil || analysis != nil else {
+            return BilingualSuggestionSet(keepRaw: nil, japanese: [])
         }
 
-        let keepRaw = BilingualSuggestion(
-            rawToken: analysis.rawToken,
-            replacementText: analysis.rawToken,
-            deleteCount: analysis.rawToken.count,
-            kind: .keepRaw
-        )
+        let rawToken = analysis?.rawToken ?? token
+        var seen: Set<String> = []
+        var suggestions: [BilingualSuggestion] = []
+
+        if let dictionaryEntry {
+            suggestions.append(BilingualSuggestion(
+                rawToken: rawToken,
+                replacementText: dictionaryEntry.replacementText,
+                deleteCount: rawToken.count,
+                kind: .dictionary
+            ))
+            seen.insert(dictionaryEntry.replacementText)
+        }
+
+        if let analysis {
+            for candidate in analysis.firstJapaneseCandidates where !candidate.isEmpty {
+                let replacement = analysis.replacement(firstJapaneseCandidate: candidate)
+                guard replacement != rawToken else { continue }
+                guard seen.insert(replacement).inserted else { continue }
+                suggestions.append(BilingualSuggestion(
+                    rawToken: rawToken,
+                    replacementText: replacement,
+                    deleteCount: rawToken.count,
+                    kind: .japanese
+                ))
+                if suggestions.count >= 8 { break }
+            }
+        }
+
+        let keepRaw: BilingualSuggestion?
+        if analysis != nil, dictionaryEntry?.replacementText != rawToken {
+            keepRaw = BilingualSuggestion(
+                rawToken: rawToken,
+                replacementText: rawToken,
+                deleteCount: rawToken.count,
+                kind: .keepRaw
+            )
+        } else {
+            keepRaw = nil
+        }
         return BilingualSuggestionSet(keepRaw: keepRaw, japanese: suggestions)
     }
 
@@ -201,6 +252,10 @@ public final class BilingualComposer {
     private struct ConvertedSpan {
         let mainText: String
         let candidates: [String]
+    }
+
+    private func dictionaryEntry(for token: String) -> UserDictionaryEntry? {
+        UserDictionaryStore.lookupEntry(for: token, in: dictionaryEntries())
     }
 
     private func analyze(beforeInput context: String) -> Analysis? {

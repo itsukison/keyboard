@@ -38,7 +38,9 @@ final class UserSession: ObservableObject {
             let session = try await supabase.auth.session
             let profile = try await loadProfile(for: session.user)
             state = .signedIn(profile)
+            try? await refreshUserDictionaryCache(for: profile.id)
         } catch {
+            UserDictionaryStore.writeEntries([])
             state = .signedOut
         }
 
@@ -47,11 +49,13 @@ final class UserSession: ObservableObject {
                 guard let self else { return }
                 switch event {
                 case .signedOut, .userDeleted:
+                    UserDictionaryStore.writeEntries([])
                     self.state = .signedOut
                 case .signedIn, .tokenRefreshed, .userUpdated:
                     if let user = session?.user,
                        let profile = try? await self.loadProfile(for: user) {
                         self.state = .signedIn(profile)
+                        try? await self.refreshUserDictionaryCache(for: profile.id)
                     }
                 default:
                     break
@@ -68,17 +72,28 @@ final class UserSession: ObservableObject {
         )
         let profile = try await loadProfile(for: response.user, fallbackName: name)
         state = .signedIn(profile)
+        try? await refreshUserDictionaryCache(for: profile.id)
     }
 
     func signIn(email: String, password: String) async throws {
         let session = try await supabase.auth.signIn(email: email, password: password)
         let profile = try await loadProfile(for: session.user)
         state = .signedIn(profile)
+        try? await refreshUserDictionaryCache(for: profile.id)
     }
 
     func signOut() async {
         try? await supabase.auth.signOut()
+        UserDictionaryStore.writeEntries([])
         state = .signedOut
+    }
+
+    func refreshUserDictionaryCache() async throws {
+        guard let profile else {
+            UserDictionaryStore.writeEntries([])
+            return
+        }
+        try await refreshUserDictionaryCache(for: profile.id)
     }
 
     func updateCompositionDisplayMode(_ mode: CompositionDisplayMode) async throws {
@@ -129,6 +144,11 @@ final class UserSession: ObservableObject {
             createdAt: row.created_at,
             compositionDisplayMode: mode
         )
+    }
+
+    private func refreshUserDictionaryCache(for userId: UUID) async throws {
+        let entries = try await UserDictionaryRemoteStore.fetchEntries(for: userId)
+        UserDictionaryStore.writeEntries(entries)
     }
 
 }

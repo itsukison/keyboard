@@ -21,7 +21,7 @@ actor JapaneseSuggestionWorker {
                 title: $0.replacementText,
                 replacementText: $0.replacementText,
                 deleteCount: $0.deleteCount,
-                kind: .japanese
+                kind: $0.kind == .dictionary ? .dictionary : .japanese
             )
         }
         if displayMode.isJapaneseHeavy,

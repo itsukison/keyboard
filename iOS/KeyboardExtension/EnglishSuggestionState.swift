@@ -2,6 +2,7 @@ import Foundation
 import KeyboardPreferences
 
 enum SuggestionKind: Equatable, Sendable {
+    case dictionary
     case english
     case keepRaw
     case japanese

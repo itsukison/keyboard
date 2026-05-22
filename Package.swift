@@ -51,6 +51,7 @@ let package = Package(
         .target(
             name: "EnglishKeyboardCore",
             dependencies: [
+                "KeyboardCore",
                 "KeyboardPreferences",
                 .product(
                     name: "KanaKanjiConverterModuleWithDefaultDictionary",

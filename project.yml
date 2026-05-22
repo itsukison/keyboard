@@ -41,10 +41,11 @@ targets:
         excludes:
           - Resources/Info.plist
       - path: iOS/Shared
-      - path: public/bg.png
-      - path: public/background.png
-      - path: public/onboardbg.png
-      - path: public/newapp.png
+      - path: public/applogo.png
+      - path: public/gradientwithglobe.png
+      - path: public/gradient1.png
+      - path: public/gradient2.png
+      - path: public/globebg.png
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.core7.bikey

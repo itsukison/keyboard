@@ -1,7 +1,16 @@
 import SwiftUI
 
+enum AuthField: Hashable {
+    case name
+    case email
+    case password
+}
+
 struct SignUpForm: View {
     @EnvironmentObject private var session: UserSession
+    @AppStorage("pendingBikeyPostAuthOnboarding") private var pendingPostAuthOnboarding = false
+    @Environment(\.dismiss) private var dismiss
+
     @State private var name: String = ""
     @State private var email: String = ""
     @State private var password: String = ""
@@ -18,56 +27,51 @@ struct SignUpForm: View {
 
     var body: some View {
         AuthFormScaffold(
-            title: "Create your account",
-            subtitle: "Type Japanese and English without switching."
-        ) { scale in
-            VStack(spacing: 16 * scale) {
+            title: "Create your\naccount",
+            subtitle: "Type Japanese and English without switching.",
+            progress: 0.28,
+            ctaTitle: "Create account",
+            isCtaEnabled: canSubmit,
+            isCtaLoading: isSubmitting,
+            errorMessage: errorMessage,
+            onBack: { dismiss() },
+            onCta: submit
+        ) {
+            VStack(spacing: 14) {
                 AuthTextField(
-                    placeholder: "Name",
+                    label: "Name",
                     text: $name,
-                    scale: scale,
                     field: .name,
-                    focused: $focusedField
+                    focused: $focusedField,
+                    autocapitalization: .words,
+                    textContentType: .name,
+                    submitLabel: .next,
+                    onSubmit: { focusedField = .email }
                 )
                 AuthTextField(
-                    placeholder: "Email",
+                    label: "Email",
                     text: $email,
-                    scale: scale,
-                    keyboard: .emailAddress,
-                    autocapitalization: .never,
                     field: .email,
-                    focused: $focusedField
+                    focused: $focusedField,
+                    keyboardType: .emailAddress,
+                    autocapitalization: .never,
+                    textContentType: .emailAddress,
+                    submitLabel: .next,
+                    onSubmit: { focusedField = .password }
                 )
-                AuthSecureField(
-                    placeholder: "Password (6+ characters)",
+                AuthTextField(
+                    label: "Password (6+ characters)",
                     text: $password,
-                    scale: scale,
                     field: .password,
-                    focused: $focusedField
+                    focused: $focusedField,
+                    textContentType: .newPassword,
+                    submitLabel: .go,
+                    isSecure: true,
+                    onSubmit: { if canSubmit { submit() } }
                 )
-            }
-        } footer: { scale in
-            VStack(spacing: 14 * scale) {
-                if let errorMessage {
-                    Text(errorMessage)
-                        .font(.system(size: 14 * scale, weight: .regular, design: .rounded))
-                        .foregroundStyle(Color(red: 0.78, green: 0.22, blue: 0.30))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 12 * scale)
-                }
-
-                Button(action: submit) {
-                    OnboardingPrimaryButtonLabel(
-                        title: "Create account",
-                        scale: scale,
-                        isLoading: isSubmitting,
-                        isEnabled: canSubmit
-                    )
-                }
-                .buttonStyle(.plain)
-                .disabled(!canSubmit)
             }
         }
+        .bikeyKeyboardToolbar { focusedField = nil }
     }
 
     private func submit() {
@@ -82,6 +86,7 @@ struct SignUpForm: View {
                     email: email.trimmingCharacters(in: .whitespaces),
                     password: password
                 )
+                pendingPostAuthOnboarding = true
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -91,6 +96,9 @@ struct SignUpForm: View {
 
 struct SignInForm: View {
     @EnvironmentObject private var session: UserSession
+    @AppStorage("pendingBikeyPostAuthOnboarding") private var pendingPostAuthOnboarding = false
+    @Environment(\.dismiss) private var dismiss
+
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var errorMessage: String?
@@ -104,48 +112,40 @@ struct SignInForm: View {
     var body: some View {
         AuthFormScaffold(
             title: "Welcome back",
-            subtitle: "Sign in to keep your conversions in sync."
-        ) { scale in
-            VStack(spacing: 16 * scale) {
+            subtitle: "Sign in to keep your conversions in sync.",
+            progress: 0.28,
+            ctaTitle: "Sign in",
+            isCtaEnabled: canSubmit,
+            isCtaLoading: isSubmitting,
+            errorMessage: errorMessage,
+            onBack: { dismiss() },
+            onCta: submit
+        ) {
+            VStack(spacing: 14) {
                 AuthTextField(
-                    placeholder: "Email",
+                    label: "Email",
                     text: $email,
-                    scale: scale,
-                    keyboard: .emailAddress,
-                    autocapitalization: .never,
                     field: .email,
-                    focused: $focusedField
+                    focused: $focusedField,
+                    keyboardType: .emailAddress,
+                    autocapitalization: .never,
+                    textContentType: .emailAddress,
+                    submitLabel: .next,
+                    onSubmit: { focusedField = .password }
                 )
-                AuthSecureField(
-                    placeholder: "Password",
+                AuthTextField(
+                    label: "Password",
                     text: $password,
-                    scale: scale,
                     field: .password,
-                    focused: $focusedField
+                    focused: $focusedField,
+                    textContentType: .password,
+                    submitLabel: .go,
+                    isSecure: true,
+                    onSubmit: { if canSubmit { submit() } }
                 )
-            }
-        } footer: { scale in
-            VStack(spacing: 14 * scale) {
-                if let errorMessage {
-                    Text(errorMessage)
-                        .font(.system(size: 14 * scale, weight: .regular, design: .rounded))
-                        .foregroundStyle(Color(red: 0.78, green: 0.22, blue: 0.30))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 12 * scale)
-                }
-
-                Button(action: submit) {
-                    OnboardingPrimaryButtonLabel(
-                        title: "Sign in",
-                        scale: scale,
-                        isLoading: isSubmitting,
-                        isEnabled: canSubmit
-                    )
-                }
-                .buttonStyle(.plain)
-                .disabled(!canSubmit)
             }
         }
+        .bikeyKeyboardToolbar { focusedField = nil }
     }
 
     private func submit() {
@@ -159,6 +159,7 @@ struct SignInForm: View {
                     email: email.trimmingCharacters(in: .whitespaces),
                     password: password
                 )
+                pendingPostAuthOnboarding = true
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -166,146 +167,200 @@ struct SignInForm: View {
     }
 }
 
-enum AuthField: Hashable {
-    case name
-    case email
-    case password
-}
+// MARK: - Scaffold
 
-private struct AuthFormScaffold<Content: View, Footer: View>: View {
+private struct AuthFormScaffold<Content: View>: View {
     let title: String
-    let subtitle: String
-    @ViewBuilder let content: (CGFloat) -> Content
-    @ViewBuilder let footer: (CGFloat) -> Footer
-
-    @Environment(\.dismiss) private var dismiss
+    let subtitle: String?
+    let progress: Double
+    let ctaTitle: String
+    let isCtaEnabled: Bool
+    var isCtaLoading: Bool = false
+    let errorMessage: String?
+    let onBack: () -> Void
+    let onCta: () -> Void
+    @ViewBuilder let content: () -> Content
 
     var body: some View {
-        GeometryReader { proxy in
-            let scale = min(proxy.size.width / 390, proxy.size.height / 844)
+        OnboardingScaffold(
+            progress: progress,
+            canGoBack: true,
+            onBack: onBack,
+            onSkip: nil,
+            ctaTitle: ctaTitle,
+            isCtaEnabled: isCtaEnabled,
+            isCtaLoading: isCtaLoading,
+            onCta: onCta
+        ) {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 28) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(title)
+                            .font(.system(size: 32, weight: .semibold))
+                            .foregroundStyle(OnboardingPalette.ink)
+                            .lineSpacing(2)
+                            .fixedSize(horizontal: false, vertical: true)
 
-            ZStack {
-                OnboardingBackground()
-                    .ignoresSafeArea()
-
-                VStack(spacing: 0) {
-                    AuthBackButton(scale: scale, action: { dismiss() })
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 28 * scale)
-                        .padding(.top, 8 * scale)
-
-                    ScrollView(.vertical, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 28 * scale) {
-                            VStack(alignment: .leading, spacing: 10 * scale) {
-                                Text(title)
-                                    .font(.system(size: 34 * scale, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(AppColor.ink)
-
-                                Text(subtitle)
-                                    .font(.system(size: 16 * scale, weight: .regular, design: .rounded))
-                                    .foregroundStyle(AppColor.muted)
-                                    .lineSpacing(3 * scale)
-                            }
-
-                            content(scale)
+                        if let subtitle {
+                            Text(subtitle)
+                                .font(.system(size: 16, weight: .regular))
+                                .foregroundStyle(OnboardingPalette.subInk)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
-                        .padding(.horizontal, 28 * scale)
-                        .padding(.top, 24 * scale)
-                        .padding(.bottom, 36 * scale)
-                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .padding(.top, 28)
 
-                    footer(scale)
-                        .padding(.horizontal, 28 * scale)
-                        .padding(.bottom, 32 * scale)
+                    content()
+
+                    if let errorMessage {
+                        AuthErrorLabel(message: errorMessage)
+                            .transition(.opacity)
+                    }
                 }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .preferredColorScheme(.light)
+            .scrollDismissesKeyboard(.interactively)
         }
-        .navigationBarBackButtonHidden(true)
-        .toolbar(.hidden, for: .navigationBar)
     }
 }
 
-private struct AuthBackButton: View {
-    let scale: CGFloat
-    let action: () -> Void
+// MARK: - Auth text field
+//
+// Light, capsule-style field tailored for the new onboarding palette.
+// Floating label slides up when focused or non-empty.
 
-    var body: some View {
-        Button(action: action) {
-            Circle()
-                .fill(Color.white.opacity(0.76))
-                .frame(width: 44 * scale, height: 44 * scale)
-                .overlay {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 17 * scale, weight: .semibold))
-                        .foregroundStyle(AppColor.ink)
-                }
-                .shadow(color: .black.opacity(0.05), radius: 12 * scale, x: 0, y: 6 * scale)
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-private struct AuthTextField: View {
-    let placeholder: String
+struct AuthTextField<Field: Hashable>: View {
+    let label: String
     @Binding var text: String
-    let scale: CGFloat
-    var keyboard: UIKeyboardType = .default
+    let field: Field
+    var focused: FocusState<Field?>.Binding
+
+    var keyboardType: UIKeyboardType = .default
     var autocapitalization: TextInputAutocapitalization = .sentences
-    let field: AuthField
-    var focused: FocusState<AuthField?>.Binding
+    var textContentType: UITextContentType? = nil
+    var submitLabel: SubmitLabel = .return
+    var isSecure: Bool = false
+    var onSubmit: (() -> Void)? = nil
+
+    @State private var isPasswordVisible: Bool = false
+
+    private var isFocused: Bool { focused.wrappedValue == field }
+    private var hasContent: Bool { !text.isEmpty }
+    private var labelFloated: Bool { isFocused || hasContent }
 
     var body: some View {
-        TextField("", text: $text, prompt: Text(placeholder).foregroundColor(AppColor.softText))
-            .keyboardType(keyboard)
-            .textInputAutocapitalization(autocapitalization)
-            .autocorrectionDisabled(true)
-            .focused(focused, equals: field)
-            .foregroundStyle(AppColor.ink)
-            .font(.system(size: 16 * scale, weight: .regular, design: .rounded))
-            .padding(.horizontal, 22 * scale)
-            .frame(height: 56 * scale)
-            .background(.white, in: RoundedRectangle(cornerRadius: 18 * scale, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18 * scale, style: .continuous)
-                    .stroke(
-                        focused.wrappedValue == field
-                            ? AppColor.purple.opacity(0.65)
-                            : AppColor.lavender.opacity(0.6),
-                        lineWidth: 1.4
-                    )
-            )
-            .shadow(color: .black.opacity(0.035), radius: 12 * scale, x: 0, y: 6 * scale)
+        ZStack(alignment: .leading) {
+            inputField
+            floatingLabel
+        }
+        .padding(.horizontal, 18)
+        .frame(minHeight: 60)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(OnboardingPalette.fieldFill)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(
+                    isFocused ? OnboardingPalette.ink.opacity(0.65) : OnboardingPalette.fieldStroke,
+                    lineWidth: isFocused ? 1.4 : 1
+                )
+        )
+        .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 3)
+        .overlay(alignment: .trailing) {
+            trailingAccessory
+                .padding(.trailing, 14)
+        }
+        .animation(.spring(response: 0.3, dampingFraction: 0.86), value: labelFloated)
+        .animation(.easeInOut(duration: 0.18), value: isFocused)
+        .contentShape(Rectangle())
+        .onTapGesture { focused.wrappedValue = field }
+    }
+
+    @ViewBuilder
+    private var inputField: some View {
+        let prompt = Text(labelFloated ? "" : label).foregroundColor(OnboardingPalette.subInk.opacity(0.65))
+        Group {
+            if isSecure && !isPasswordVisible {
+                SecureField("", text: $text, prompt: prompt)
+            } else {
+                TextField("", text: $text, prompt: prompt)
+            }
+        }
+        .keyboardType(keyboardType)
+        .textInputAutocapitalization(isSecure ? .never : autocapitalization)
+        .autocorrectionDisabled(true)
+        .textContentType(textContentType)
+        .submitLabel(submitLabel)
+        .focused(focused, equals: field)
+        .foregroundStyle(OnboardingPalette.ink)
+        .font(.system(size: 17, weight: .regular))
+        .padding(.top, labelFloated ? 14 : 0)
+        .padding(.trailing, trailingPadding)
+        .onSubmit { onSubmit?() }
+    }
+
+    private var trailingPadding: CGFloat {
+        let showsClear = isFocused && hasContent && !isSecure
+        let showsEye = isSecure
+        return (showsClear || showsEye) ? 36 : 0
+    }
+
+    @ViewBuilder
+    private var floatingLabel: some View {
+        Text(label)
+            .foregroundStyle(labelFloated ? OnboardingPalette.subInk : OnboardingPalette.subInk.opacity(0.7))
+            .font(.system(size: labelFloated ? 12 : 17, weight: .regular))
+            .padding(.bottom, labelFloated ? 26 : 0)
+            .allowsHitTesting(false)
+    }
+
+    @ViewBuilder
+    private var trailingAccessory: some View {
+        if isSecure {
+            Button {
+                isPasswordVisible.toggle()
+            } label: {
+                Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(OnboardingPalette.subInk.opacity(0.7))
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isPasswordVisible ? "Hide password" : "Show password")
+        } else if isFocused && hasContent {
+            Button {
+                text = ""
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundStyle(OnboardingPalette.subInk.opacity(0.55))
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Clear text")
+            .transition(.opacity)
+        }
     }
 }
 
-private struct AuthSecureField: View {
-    let placeholder: String
-    @Binding var text: String
-    let scale: CGFloat
-    let field: AuthField
-    var focused: FocusState<AuthField?>.Binding
+private struct AuthErrorLabel: View {
+    let message: String
 
     var body: some View {
-        SecureField("", text: $text, prompt: Text(placeholder).foregroundColor(AppColor.softText))
-            .textInputAutocapitalization(.never)
-            .autocorrectionDisabled(true)
-            .focused(focused, equals: field)
-            .foregroundStyle(AppColor.ink)
-            .font(.system(size: 16 * scale, weight: .regular, design: .rounded))
-            .padding(.horizontal, 22 * scale)
-            .frame(height: 56 * scale)
-            .background(.white, in: RoundedRectangle(cornerRadius: 18 * scale, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18 * scale, style: .continuous)
-                    .stroke(
-                        focused.wrappedValue == field
-                            ? AppColor.purple.opacity(0.65)
-                            : AppColor.lavender.opacity(0.6),
-                        lineWidth: 1.4
-                    )
-            )
-            .shadow(color: .black.opacity(0.035), radius: 12 * scale, x: 0, y: 6 * scale)
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "exclamationmark.circle.fill")
+                .font(.system(size: 14, weight: .regular))
+                .foregroundStyle(OnboardingPalette.danger)
+            Text(message)
+                .font(.system(size: 14, weight: .regular))
+                .foregroundStyle(OnboardingPalette.danger)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 4)
     }
 }

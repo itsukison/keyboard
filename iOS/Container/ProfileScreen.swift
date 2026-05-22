@@ -3,26 +3,26 @@ import SwiftUI
 import UIKit
 
 struct ProfileScreen: View {
-    let scale: CGFloat
-    let horizontalInset: CGFloat
     @EnvironmentObject private var session: UserSession
     @ObservedObject private var stats = ConversionStats.shared
     @State private var compositionDisplayMode = KeyboardSettingsStore.readCompositionDisplayMode()
     @State private var lastConfirmedCompositionDisplayMode = KeyboardSettingsStore.readCompositionDisplayMode()
     @State private var showPersonalInfo = false
+    @State private var phraseCount: Int = UserDictionaryStore.readEntries().count
+    @State private var showSignOutConfirm = false
 
     var body: some View {
         NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 0) {
-                    ProfileTopControls(scale: scale)
-                        .padding(.top, 72 * scale)
+                    ProfileTopControls()
+                        .padding(.top, BikeyMetrics.Spacing.s)
 
-                    ProfileCard(scale: scale, displayName: session.displayName, stats: stats)
-                        .padding(.top, 42 * scale)
+                    ProfileCard(displayName: session.displayName, stats: stats, phraseCount: phraseCount)
+                        .padding(.top, BikeyMetrics.Spacing.l - 4)
 
-                    ProfileSectionTitle("Account", scale: scale)
-                        .padding(.top, 56 * scale)
+                    ProfileSectionTitle("Account")
+                        .padding(.top, BikeyMetrics.Spacing.l + 2)
 
                     ProfileListCard(
                         rows: [
@@ -37,31 +37,39 @@ struct ProfileScreen: View {
                                 toggle: .languageMode
                             ),
                             .init(icon: "crown", title: "Plan", trailing: "Bikey Pro"),
-                            .init(icon: "gift", title: "Invite a Friend"),
                             .init(
                                 icon: "rectangle.portrait.and.arrow.right",
                                 title: "Sign Out",
-                                action: { Task { await session.signOut() } }
+                                action: { showSignOutConfirm = true }
                             )
                         ],
-                        compositionDisplayMode: $compositionDisplayMode,
-                        scale: scale
+                        compositionDisplayMode: $compositionDisplayMode
                     )
-                    .padding(.top, 17 * scale)
+                    .padding(.top, BikeyMetrics.Spacing.s)
 
-                    Spacer(minLength: 178 * scale)
+                    Spacer(minLength: 84)
                 }
-                .padding(.horizontal, horizontalInset)
                 .frame(maxWidth: .infinity)
             }
+            .padding(.horizontal, BikeyMetrics.Sizing.screenHorizontalInset)
             .navigationDestination(isPresented: $showPersonalInfo) {
-                PersonalInformationView(profile: session.profile, scale: scale)
+                PersonalInformationView(profile: session.profile)
             }
             .onAppear {
                 syncCompositionDisplayModeFromProfile()
+                phraseCount = UserDictionaryStore.readEntries().count
             }
             .onChange(of: session.profile) { _ in
                 syncCompositionDisplayModeFromProfile()
+                phraseCount = UserDictionaryStore.readEntries().count
+            }
+            .alert("Sign out of Bikey?", isPresented: $showSignOutConfirm) {
+                Button("Cancel", role: .cancel) {}
+                Button("Sign Out", role: .destructive) {
+                    Task { await session.signOut() }
+                }
+            } message: {
+                Text("You'll need to sign in again to access your saved phrases and settings.")
             }
             .onChange(of: compositionDisplayMode) { newValue in
                 guard newValue != lastConfirmedCompositionDisplayMode else {
@@ -94,7 +102,6 @@ struct ProfileScreen: View {
 
 private struct PersonalInformationView: View {
     let profile: UserSession.Profile?
-    let scale: CGFloat
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -105,7 +112,7 @@ private struct PersonalInformationView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20 * scale) {
+            VStack(alignment: .leading, spacing: BikeyMetrics.Spacing.s + 2) {
                 infoRow(label: "Name", value: profile?.displayName ?? "—")
                 infoRow(label: "Email", value: profile?.email ?? "—")
                 infoRow(
@@ -113,8 +120,8 @@ private struct PersonalInformationView: View {
                     value: profile.map { Self.dateFormatter.string(from: $0.createdAt) } ?? "—"
                 )
             }
-            .padding(.horizontal, 32 * scale)
-            .padding(.top, 32 * scale)
+            .padding(.horizontal, BikeyMetrics.Spacing.l - 4)
+            .padding(.top, BikeyMetrics.Spacing.l - 4)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(AppColor.background.ignoresSafeArea())
@@ -123,165 +130,150 @@ private struct PersonalInformationView: View {
     }
 
     private func infoRow(label: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 6 * scale) {
+        VStack(alignment: .leading, spacing: 3) {
             Text(label)
-                .font(.system(size: 22 * scale, weight: .regular, design: .rounded))
+                .bikeyFont(11, weight: .regular, relativeTo: .footnote)
                 .foregroundStyle(AppColor.muted)
             Text(value)
-                .font(.system(size: 30 * scale, weight: .regular, design: .rounded))
+                .bikeyFont(15, weight: .regular, relativeTo: .body)
                 .foregroundStyle(AppColor.ink)
         }
-        .padding(.vertical, 14 * scale)
-        .padding(.horizontal, 24 * scale)
+        .padding(.vertical, BikeyMetrics.Spacing.s - 1)
+        .padding(.horizontal, BikeyMetrics.Spacing.m - 4)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.white.opacity(0.86), in: RoundedRectangle(cornerRadius: 22 * scale, style: .continuous))
+        .background(.white.opacity(0.86), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
     }
 }
 
 private struct ProfileTopControls: View {
-    let scale: CGFloat
-
     var body: some View {
-        HStack {
-            ProfileCircleButton(systemName: "chevron.left", scale: scale)
-
-            Spacer()
-
-            ProfileCircleButton(systemName: "gearshape", scale: scale)
-        }
-    }
-}
-
-private struct ProfileCircleButton: View {
-    let systemName: String
-    let scale: CGFloat
-
-    var body: some View {
-        Circle()
-            .fill(Color.white.opacity(0.54))
-            .frame(width: 68 * scale, height: 68 * scale)
-            .overlay {
-                Image(systemName: systemName)
-                    .font(.system(size: 29 * scale, weight: .regular))
-                    .foregroundStyle(Color(red: 0.230, green: 0.226, blue: 0.255))
-            }
-            .shadow(color: .black.opacity(0.045), radius: 12 * scale, x: 0, y: 6 * scale)
+        Text("Profile")
+            .bikeyFont(20, weight: .medium, relativeTo: .title3)
+            .foregroundStyle(AppColor.ink)
+            .frame(maxWidth: .infinity)
     }
 }
 
 private struct ProfileCard: View {
-    let scale: CGFloat
     let displayName: String
     @ObservedObject var stats: ConversionStats
+    let phraseCount: Int
 
     var body: some View {
         ZStack {
             ProfileCardBackground()
 
             VStack(spacing: 0) {
-                HStack(alignment: .top, spacing: 27 * scale) {
-                    ProfilePortrait(scale: scale)
-                        .frame(width: 112 * scale, height: 112 * scale)
+                HStack(alignment: .top, spacing: BikeyMetrics.Spacing.m - 4) {
+                    ProfilePortrait()
+                        .frame(width: 52, height: 52)
 
-                    VStack(alignment: .leading, spacing: 8 * scale) {
-                        HStack(spacing: 12 * scale) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
                             Text(displayName.isEmpty ? "Bikey user" : displayName)
-                                .font(.system(size: 44 * scale, weight: .regular, design: .rounded))
+                                .bikeyFont(20, weight: .regular, relativeTo: .title2)
                                 .foregroundStyle(.white)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.84)
 
                             Text("PRO")
-                                .font(.system(size: 16 * scale, weight: .bold, design: .rounded))
+                                .bikeyFont(8, weight: .bold, relativeTo: .caption2)
                                 .foregroundStyle(.white.opacity(0.88))
-                                .padding(.horizontal, 12 * scale)
-                                .frame(height: 29 * scale)
+                                .padding(.horizontal, 6)
+                                .frame(height: 14)
                                 .background(.white.opacity(0.18), in: Capsule())
                                 .overlay {
                                     Capsule()
-                                        .stroke(.white.opacity(0.45), lineWidth: max(1, 1 * scale))
+                                        .stroke(.white.opacity(0.45), lineWidth: 1)
                                 }
                         }
 
                         Text("\(stats.conversionsDisplay) conversions\nwith Bikey")
-                            .font(.system(size: 26 * scale, weight: .regular, design: .rounded))
+                            .bikeyFont(12, weight: .regular, relativeTo: .caption)
                             .foregroundStyle(.white.opacity(0.82))
-                            .lineSpacing(7 * scale)
+                            .lineSpacing(3)
                     }
 
                     Spacer()
                 }
 
                 HStack(spacing: 0) {
-                    ProfileStat(value: "158", label: "WPM", scale: scale)
-                    ProfileStat(value: "10", label: "Hours Saved", scale: scale)
-                    ProfileStat(value: stats.streakDisplay, label: "Day Streak", scale: scale)
+                    ProfileStat(value: stats.conversionsDisplay, label: "Conversions")
+                    ProfileStat(value: "\(phraseCount)", label: "Phrases")
+                    ProfileStat(value: stats.streakDisplay, label: "Day Streak")
                 }
-                .padding(.top, 54 * scale)
+                .padding(.top, BikeyMetrics.Spacing.l + 1)
 
                 Rectangle()
                     .fill(.white.opacity(0.22))
-                    .frame(height: max(1, 1 * scale))
-                    .padding(.top, 38 * scale)
+                    .frame(height: 1)
+                    .padding(.top, BikeyMetrics.Spacing.m + 2)
 
                 HStack(alignment: .center, spacing: 0) {
-                    HStack(spacing: 23 * scale) {
-                        RoundedRectangle(cornerRadius: 14 * scale, style: .continuous)
+                    HStack(spacing: BikeyMetrics.Spacing.s + 3) {
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
                             .fill(.white.opacity(0.20))
-                            .frame(width: 58 * scale, height: 58 * scale)
+                            .frame(width: 27, height: 27)
                             .overlay {
                                 Image(systemName: "keyboard")
-                                    .font(.system(size: 29 * scale, weight: .medium))
+                                    .font(.system(size: 14, weight: .medium))
                                     .foregroundStyle(.white.opacity(0.88))
                             }
 
-                        VStack(alignment: .leading, spacing: 8 * scale) {
+                        VStack(alignment: .leading, spacing: 4) {
                             Text("Bikey")
-                                .font(.system(size: 34 * scale, weight: .semibold, design: .rounded))
+                                .bikeyFont(16, weight: .semibold, relativeTo: .body)
                                 .foregroundStyle(.white)
 
                             Text("Type Japanese and English\nwithout switching.")
-                                .font(.system(size: 24 * scale, weight: .regular, design: .rounded))
+                                .bikeyFont(11, weight: .regular, relativeTo: .footnote)
                                 .foregroundStyle(.white.opacity(0.76))
-                                .lineSpacing(6 * scale)
+                                .lineSpacing(3)
                         }
                     }
 
                     Spacer()
                 }
-                .padding(.top, 38 * scale)
+                .padding(.top, BikeyMetrics.Spacing.m + 2)
             }
-            .padding(.top, 42 * scale)
-            .padding(.horizontal, 42 * scale)
-            .padding(.bottom, 38 * scale)
+            .padding(.top, BikeyMetrics.Spacing.l - 4)
+            .padding(.horizontal, BikeyMetrics.Spacing.l - 4)
+            .padding(.bottom, BikeyMetrics.Spacing.m + 2)
         }
-        .frame(height: 530 * scale)
-        .clipShape(RoundedRectangle(cornerRadius: 42 * scale, style: .continuous))
-        .shadow(color: AppColor.purple.opacity(0.18), radius: 26 * scale, x: 0, y: 16 * scale)
+        .frame(height: 247)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .shadow(color: AppColor.purple.opacity(0.18), radius: 12, x: 0, y: 7)
     }
 }
 
 private struct ProfileCardBackground: View {
     var body: some View {
-        if let image = loadHeroImage() {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .overlay(Color(red: 0.350, green: 0.250, blue: 0.680).opacity(0.34))
-        } else {
+        ZStack {
+            if let image = loadHeroImage() {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.552, green: 0.458, blue: 0.795),
+                        Color(red: 0.720, green: 0.656, blue: 0.895)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+
             LinearGradient(
-                colors: [
-                    Color(red: 0.552, green: 0.458, blue: 0.795),
-                    Color(red: 0.720, green: 0.656, blue: 0.895)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+                colors: [.black.opacity(0.22), .black.opacity(0.04)],
+                startPoint: .top,
+                endPoint: .bottom
             )
         }
     }
 
     private func loadHeroImage() -> UIImage? {
-        if let url = Bundle.main.url(forResource: "bg", withExtension: "png"),
+        if let url = Bundle.main.url(forResource: "gradient2", withExtension: "png"),
            let image = UIImage(contentsOfFile: url.path) {
             return image
         }
@@ -291,19 +283,17 @@ private struct ProfileCardBackground: View {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-        return UIImage(contentsOfFile: repoRoot.appendingPathComponent("public/bg.png").path)
+        return UIImage(contentsOfFile: repoRoot.appendingPathComponent("public/gradient2.png").path)
     }
 }
 
 private struct ProfilePortrait: View {
-    let scale: CGFloat
-
     var body: some View {
         Circle()
             .fill(.white.opacity(0.92))
             .overlay {
                 Image(systemName: "person.crop.circle.fill")
-                    .font(.system(size: 102 * scale, weight: .regular))
+                    .font(.system(size: 48, weight: .regular))
                     .foregroundStyle(
                         Color(red: 0.230, green: 0.226, blue: 0.255).opacity(0.88),
                         Color(red: 0.930, green: 0.925, blue: 0.918)
@@ -315,16 +305,15 @@ private struct ProfilePortrait: View {
 private struct ProfileStat: View {
     let value: String
     let label: String
-    let scale: CGFloat
 
     var body: some View {
-        VStack(spacing: 11 * scale) {
+        VStack(spacing: 5) {
             Text(value)
-                .font(.system(size: 32 * scale, weight: .regular, design: .rounded))
+                .bikeyFont(15, weight: .regular, relativeTo: .body)
                 .foregroundStyle(.white)
 
             Text(label)
-                .font(.system(size: 24 * scale, weight: .regular, design: .rounded))
+                .bikeyFont(11, weight: .regular, relativeTo: .footnote)
                 .foregroundStyle(.white.opacity(0.74))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
@@ -333,105 +322,44 @@ private struct ProfileStat: View {
     }
 }
 
-private struct QRPlaceholder: View {
-    let scale: CGFloat
-
-    private let filledCells: Set<Int> = [
-        0, 1, 2, 4, 7, 8, 9, 11, 14, 15, 16, 18, 20, 23,
-        25, 28, 31, 33, 35, 37, 40, 43, 44, 46, 47, 49,
-        51, 53, 56, 58, 60, 63, 64, 66, 68, 70, 73, 75,
-        77, 78, 80, 82, 85, 88, 90, 92, 94, 96, 98, 100,
-        103, 105, 107, 109, 111, 113, 116, 118, 119, 121,
-        123, 126, 128, 130, 132, 134, 136, 139, 141, 143
-    ]
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 7 * scale, style: .continuous)
-                .fill(.white.opacity(0.88))
-
-            VStack(spacing: 5 * scale) {
-                ForEach(0..<12, id: \.self) { row in
-                    HStack(spacing: 5 * scale) {
-                        ForEach(0..<12, id: \.self) { column in
-                            let index = row * 12 + column
-                            RoundedRectangle(cornerRadius: 1.4 * scale, style: .continuous)
-                                .fill(filledCells.contains(index) ? AppColor.purple.opacity(0.76) : Color.clear)
-                                .frame(width: 7 * scale, height: 7 * scale)
-                        }
-                    }
-                }
-            }
-
-            QRCorner(scale: scale)
-                .frame(width: 32 * scale, height: 32 * scale)
-                .offset(x: -51 * scale, y: -51 * scale)
-
-            QRCorner(scale: scale)
-                .frame(width: 32 * scale, height: 32 * scale)
-                .offset(x: 51 * scale, y: -51 * scale)
-
-            QRCorner(scale: scale)
-                .frame(width: 32 * scale, height: 32 * scale)
-                .offset(x: -51 * scale, y: 51 * scale)
-        }
-    }
-}
-
-private struct QRCorner: View {
-    let scale: CGFloat
-
-    var body: some View {
-        RoundedRectangle(cornerRadius: 3 * scale, style: .continuous)
-            .stroke(AppColor.purple.opacity(0.76), lineWidth: 5 * scale)
-            .background(
-                RoundedRectangle(cornerRadius: 2 * scale, style: .continuous)
-                    .fill(.white.opacity(0.75))
-                    .padding(8 * scale)
-            )
-    }
-}
-
 private struct ProfileSectionTitle: View {
     let title: String
-    let scale: CGFloat
 
-    init(_ title: String, scale: CGFloat) {
+    init(_ title: String) {
         self.title = title
-        self.scale = scale
     }
 
     var body: some View {
         Text(title)
-            .font(.system(size: 38 * scale, weight: .regular, design: .rounded))
+            .bikeyFont(18, weight: .regular, relativeTo: .headline)
             .foregroundStyle(Color(red: 0.475, green: 0.468, blue: 0.512))
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.leading, 22 * scale)
+            .padding(.leading, BikeyMetrics.Spacing.s + 2)
     }
 }
 
 private struct ProfileListCard: View {
     let rows: [ProfileRowModel]
     var compositionDisplayMode: Binding<CompositionDisplayMode>? = nil
-    let scale: CGFloat
 
     var body: some View {
         VStack(spacing: 0) {
             ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
                 ProfileListRow(
                     model: row,
-                    compositionDisplayMode: compositionDisplayMode,
-                    scale: scale
+                    compositionDisplayMode: compositionDisplayMode
                 )
 
                 if index < rows.count - 1 {
                     Divider()
-                        .padding(.leading, 112 * scale)
+                        .overlay(Color.black.opacity(0.035))
+                        .padding(.leading, 56)
+                        .padding(.trailing, BikeyMetrics.Spacing.m)
                 }
             }
         }
-        .background(.white.opacity(0.86), in: RoundedRectangle(cornerRadius: 31 * scale, style: .continuous))
-        .shadow(color: .black.opacity(0.035), radius: 18 * scale, x: 0, y: 10 * scale)
+        .background(.white.opacity(0.90), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .shadow(color: .black.opacity(0.045), radius: 18, x: 0, y: 10)
     }
 }
 
@@ -464,7 +392,6 @@ private struct ProfileRowModel {
 private struct ProfileListRow: View {
     let model: ProfileRowModel
     var compositionDisplayMode: Binding<CompositionDisplayMode>?
-    let scale: CGFloat
 
     private var isJapaneseHeavy: Binding<Bool> {
         Binding(
@@ -485,14 +412,14 @@ private struct ProfileListRow: View {
     }
 
     private var rowContent: some View {
-        HStack(spacing: 28 * scale) {
+        HStack(spacing: BikeyMetrics.Spacing.m - 3) {
             Image(systemName: model.icon)
-                .font(.system(size: 35 * scale, weight: .regular))
-                .foregroundStyle(AppColor.purple.opacity(0.48))
-                .frame(width: 40 * scale)
+                .font(.system(size: 19, weight: .regular))
+                .foregroundStyle(AppColor.ink.opacity(0.86))
+                .frame(width: 22)
 
             Text(model.title)
-                .font(.system(size: 32 * scale, weight: .regular, design: .rounded))
+                .bikeyFont(15, weight: .regular, relativeTo: .body)
                 .foregroundStyle(AppColor.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
@@ -503,21 +430,20 @@ private struct ProfileListRow: View {
                 Toggle("", isOn: isJapaneseHeavy)
                     .labelsHidden()
                     .tint(AppColor.purple.opacity(0.82))
-                    .scaleEffect(scale)
-                    .frame(width: 52 * scale, height: 32 * scale)
             } else if let trailing = model.trailing {
                 Text(trailing)
-                    .font(.system(size: 30 * scale, weight: .regular, design: .rounded))
-                    .foregroundStyle(AppColor.purple.opacity(0.74))
+                    .bikeyFont(14, weight: .regular, relativeTo: .body)
+                    .foregroundStyle(AppColor.muted.opacity(0.82))
             }
 
             if model.toggle == nil {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 26 * scale, weight: .regular))
-                    .foregroundStyle(Color.black.opacity(0.22))
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(Color.black.opacity(0.34))
             }
         }
-        .padding(.horizontal, 48 * scale)
-        .frame(height: 102 * scale)
+        .padding(.horizontal, BikeyMetrics.Spacing.l - 1)
+        .frame(minHeight: 54)
+        .contentShape(Rectangle())
     }
 }

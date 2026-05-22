@@ -19,8 +19,11 @@ The detector layers three signals on top of one structural invariant:
 
 **Per-piece classification.** Once `preSplit` returns a piece, `score(piece:)` combines:
 1. A character-trigram log-probability model (`TrigramScorer`) trained offline on a curated JA-romaji + EN seed corpus, scaled and added to the JA/EN running score. Skipped for tokens of length ≤ 2 where a single unseen trigram is too noisy.
-2. The legacy heuristics: kana parseability, impossible-in-JA consonant clusters (`str`, `spl`, `ght`, …), particles, loanword hints, English contractions, capitalization, etc.
-3. Neighbor smoothing in `smooth(tokens:)` — left/right 2-token window plus a document-level `LanguagePrior` for ambiguous tokens.
+2. Exact common-English hits, which are stronger than kana parseability for standalone alphabet words like `arrive` that can be forced through romaji but are overwhelmingly English.
+3. The legacy heuristics: kana parseability, impossible-in-JA consonant clusters (`str`, `spl`, `ght`, …), particles, loanword hints, English contractions, capitalization, etc.
+4. Neighbor smoothing in `smooth(tokens:)` — left/right 2-token window plus a document-level `LanguagePrior` for ambiguous tokens.
+
+**Post-Japanese spacing.** When actual Japanese text is followed by an explicit space, the next exact English word is treated as an English island (`一緒に go to` stays English after the space). Raw romaji context such as `watashi no` still uses the normal Japanese/English smoothing rules.
 
 **Long-run prior.** Runs of ≥ 8 lowercase chars with no embedded EN dictionary match are virtually always Japanese romaji (`hashiwowatarumaenitaberu`, `watashihaashitano…`); the existing `if clean.count >= 8 && !englishHit { ja += 1.7 }` rule encodes this.
 

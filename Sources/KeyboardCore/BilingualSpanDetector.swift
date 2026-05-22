@@ -62,7 +62,8 @@ public struct BilingualSpanDetector: Sendable {
         // verbs (common)
         "is", "am", "are", "was", "were", "be", "been", "being", "have", "has",
         "had", "do", "does", "did", "will", "would", "shall", "should", "can",
-        "could", "may", "might", "must", "go", "going", "come", "get", "got",
+        "could", "may", "might", "must", "go", "going", "come", "arrive",
+        "get", "got",
         "make", "made", "take", "took", "see", "saw", "know", "knew", "think",
         "thought", "say", "said", "tell", "want", "give", "find", "use", "work",
         "call", "try", "ask", "need", "feel", "leave", "put", "mean", "keep",
