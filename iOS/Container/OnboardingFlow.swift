@@ -99,6 +99,9 @@ private struct WelcomeOnboardingPage: View {
                             .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
                     }
                     .buttonStyle(.plain)
+
+                    LegalFooterRow()
+                        .padding(.top, BikeyMetrics.Spacing.s)
                 }
                 .padding(.bottom, BikeyMetrics.Spacing.xl)
             }
@@ -238,6 +241,39 @@ struct PostAuthOnboardingFlow: View {
     private func openKeyboardSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         openURL(url)
+    }
+}
+
+private struct LegalFooterRow: View {
+    @State private var activeURL: IdentifiedURL?
+
+    var body: some View {
+        HStack(spacing: 14) {
+            footerLink("Privacy", url: LegalLinks.privacy)
+            dot
+            footerLink("Terms", url: LegalLinks.terms)
+            dot
+            footerLink("Support", url: LegalLinks.support)
+        }
+        .frame(maxWidth: .infinity)
+        .sheet(item: $activeURL) { SafariView(url: $0.url) }
+    }
+
+    private var dot: some View {
+        Circle()
+            .fill(.white.opacity(0.55))
+            .frame(width: 3, height: 3)
+    }
+
+    private func footerLink(_ title: String, url: URL) -> some View {
+        Button {
+            activeURL = IdentifiedURL(url: url)
+        } label: {
+            Text(title)
+                .bikeyFont(12, weight: .regular, relativeTo: .footnote)
+                .foregroundStyle(.white.opacity(0.82))
+        }
+        .buttonStyle(.plain)
     }
 }
 

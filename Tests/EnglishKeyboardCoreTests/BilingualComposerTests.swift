@@ -88,6 +88,19 @@ final class BilingualComposerTests: XCTestCase {
         ])
     }
 
+    func testLongJapaneseTakedoRunConvertsAsOneSpan() {
+        let composer = BilingualComposer(converter: MockJapaneseConverter(mapping: [
+            "けっこういいとおもったけど": ["結構いいと思ったけど"],
+        ]))
+
+        let suggestions = composer.suggestions(beforeInput: "kekkouiitoomottakedo")
+        let commit = composer.commitForSpace(beforeInput: "kekkouiitoomottakedo")
+
+        XCTAssertEqual(suggestions.map(\.replacementText), ["結構いいと思ったけど"])
+        XCTAssertEqual(commit?.replacementText, "結構いいと思ったけど")
+        XCTAssertEqual(commit?.spans.map(\.language), [.japanese])
+    }
+
     func testKeepRawSuggestionIsOfferedSeparatelyForConvertibleJapaneseWord() {
         let classifier = BilingualLanguageClassifier(englishWords: [])
         let composer = BilingualComposer(
@@ -109,6 +122,12 @@ final class BilingualComposerTests: XCTestCase {
         let composer = BilingualComposer(converter: MockJapaneseConverter(mapping: [:]))
 
         XCTAssertTrue(composer.suggestions(beforeInput: "meeting").isEmpty)
+    }
+
+    func testSearchUrlConvertibleTokensCanBeIdentifiedWithoutEnglishTypos() {
+        XCTAssertTrue(BilingualComposer.containsJapaneseSpan(beforeInput: "kyou"))
+        XCTAssertTrue(BilingualComposer.containsJapaneseSpan(beforeInput: "watashiha"))
+        XCTAssertFalse(BilingualComposer.containsJapaneseSpan(beforeInput: "example.com"))
     }
 
     func testEnglishHeavyDisplayModeDoesNotProduceToolbarPreview() {

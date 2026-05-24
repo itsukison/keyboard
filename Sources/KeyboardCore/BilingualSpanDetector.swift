@@ -153,6 +153,10 @@ public struct BilingualSpanDetector: Sendable {
         "mi-tingu", "miitingu", "pasokon", "sumaato", "terebi",
     ]
 
+    private static let protectedEmbeddedJapaneseReadings: Set<String> = [
+        "home", "made", "more", "name", "same", "took",
+    ]
+
     // MARK: - Public API
 
     public func detect(_ raw: String, documentPrior: LanguagePrior = .neutral) -> [DetectedSpan] {
@@ -284,7 +288,9 @@ public struct BilingualSpanDetector: Sendable {
 
         while index < lowerChars.count {
             let suffix = String(lowerChars[index...])
-            if let match = embeddedEnglishWords.first(where: { suffix.hasPrefix($0) }) {
+            if let match = embeddedEnglishWords.first(where: {
+                suffix.hasPrefix($0) && !shouldSkipEmbeddedEnglishMatch($0, in: lowerChars, at: index)
+            }) {
                 if !japaneseBuffer.isEmpty {
                     pieces.append(Piece(raw: japaneseBuffer, clean: japaneseBuffer, explicitEnglish: false))
                     japaneseBuffer = ""
@@ -305,6 +311,28 @@ public struct BilingualSpanDetector: Sendable {
             return [Piece(raw: word, clean: lower, explicitEnglish: false)]
         }
         return pieces
+    }
+
+    private func shouldSkipEmbeddedEnglishMatch(
+        _ match: String,
+        in chars: [Character],
+        at index: Int
+    ) -> Bool {
+        let isEmbedded = index > 0 || index + match.count < chars.count
+        guard isEmbedded else { return false }
+
+        if Self.protectedEmbeddedJapaneseReadings.contains(match) {
+            return true
+        }
+
+        if match == "take" {
+            let afterMatch = index + match.count
+            guard afterMatch < chars.count else { return false }
+            let continuation = String(chars[afterMatch...])
+            return continuation.hasPrefix("do")
+        }
+
+        return false
     }
 
     // MARK: - Scoring

@@ -14,6 +14,9 @@ struct EnglishKeyboardView: View {
                 if case .custom(named: "longVowel") = params.item.action {
                     Text("ー")
                         .font(.system(size: 24, weight: .regular))
+                } else if params.item.action == .nextKeyboard {
+                    Image(systemName: "globe")
+                        .font(.system(size: 22, weight: .regular))
                 } else {
                     params.view
                 }
@@ -29,13 +32,26 @@ struct EnglishKeyboardView: View {
 
     private var keyboardLayout: KeyboardLayout {
         var layout = KeyboardLayout.standard(for: keyboardContext)
-        guard suggestions.displayMode.isJapaneseHeavy,
-              keyboardContext.keyboardType.isAlphabetic else {
+        guard keyboardContext.keyboardType.isAlphabetic else {
             return layout
         }
+
+        layout.insertInputModeSwitchKeyBeforeSpace()
+
+        guard suggestions.displayMode.isJapaneseHeavy else {
+            return layout
+        }
+
         layout.insert(.custom(named: "longVowel"), withWidth: .input, after: .character("l"))
         layout.insert(.custom(named: "longVowel"), withWidth: .input, after: .character("L"))
         return layout
+    }
+}
+
+private extension KeyboardLayout {
+    mutating func insertInputModeSwitchKeyBeforeSpace() {
+        remove(.nextKeyboard)
+        tryInsertBottomRowAction(.nextKeyboard, before: .space)
     }
 }
 

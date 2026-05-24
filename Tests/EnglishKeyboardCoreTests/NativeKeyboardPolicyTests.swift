@@ -29,6 +29,15 @@ final class NativeKeyboardPolicyTests: XCTestCase {
         XCTAssertFalse(NativeKeyboardPolicy.allowsAutocorrection(autocorrectionEnabled: false, contentKind: .prose))
     }
 
+    func testBilingualConversionSuggestionsAllowedInSearchAndUrlInputs() {
+        XCTAssertTrue(NativeKeyboardPolicy.allowsBilingualConversionSuggestions(contentKind: .prose))
+        XCTAssertTrue(NativeKeyboardPolicy.allowsBilingualConversionSuggestions(contentKind: .webSearch))
+        XCTAssertTrue(NativeKeyboardPolicy.allowsBilingualConversionSuggestions(contentKind: .url))
+        XCTAssertFalse(NativeKeyboardPolicy.allowsBilingualConversionSuggestions(contentKind: .email))
+        XCTAssertFalse(NativeKeyboardPolicy.allowsBilingualConversionSuggestions(contentKind: .numeric))
+        XCTAssertFalse(NativeKeyboardPolicy.allowsBilingualConversionSuggestions(contentKind: .phone))
+    }
+
     func testDoubleSpacePeriod() {
         XCTAssertTrue(NativeKeyboardPolicy.shouldApplyDoubleSpacePeriod(
             beforeInput: "Hello ",

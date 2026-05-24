@@ -90,4 +90,20 @@ final class BilingualLanguageClassifierTests: XCTestCase {
         XCTAssertEqual(spans.map(\.raw), ["gohandoko"])
         XCTAssertEqual(spans.map(\.language), [.japanese])
     }
+
+    func testLongJapaneseEndingDoesNotSplitTakeAsEmbeddedEnglish() {
+        let spans = classifier.spans(in: "kekkouiitoomottakedo")
+
+        XCTAssertEqual(spans.map(\.raw), ["kekkouiitoomottakedo"])
+        XCTAssertEqual(spans.map(\.language), [.japanese])
+        XCTAssertEqual(spans.first?.kana, "けっこういいとおもったけど")
+    }
+
+    func testCommonJapaneseReadingsDoNotSplitAsEmbeddedEnglish() {
+        for word in ["koremade", "nameta", "sameta", "tooku", "komorebi", "hometekureta"] {
+            let spans = classifier.spans(in: word)
+            XCTAssertEqual(spans.map(\.raw), [word], "word=\(word)")
+            XCTAssertEqual(spans.map(\.language), [.japanese], "word=\(word)")
+        }
+    }
 }

@@ -65,6 +65,10 @@ final class KeyboardViewController: KeyboardInputViewController {
         guard let proxy = activeTextDocumentProxy else { return }
         let before = proxy.documentContextBeforeInput ?? ""
         let displayMode = currentDisplayMode
+        let canCommitBilingualConversion = allowsBilingualConversionCommit(
+            beforeInput: before,
+            displayMode: displayMode
+        )
 
         if rawConfirmedContext == before {
             rawConfirmedContext = nil
@@ -74,7 +78,7 @@ final class KeyboardViewController: KeyboardInputViewController {
         }
 
         if displayMode.isJapaneseHeavy,
-           currentTraits.allowsAutocorrection,
+           canCommitBilingualConversion,
            proxy.selectedText?.isEmpty ?? true {
             if let cachedCommit = cachedJapaneseCommit(beforeInput: before, displayMode: displayMode) {
                 commitSuggestionReplacement(cachedCommit, beforeInput: before, appendSpace: false)
@@ -94,7 +98,7 @@ final class KeyboardViewController: KeyboardInputViewController {
             return
         }
 
-        if currentTraits.allowsAutocorrection,
+        if canCommitBilingualConversion,
            proxy.selectedText?.isEmpty ?? true {
             if let cachedCommit = cachedJapaneseCommit(beforeInput: before, displayMode: displayMode) {
                 commitSuggestionReplacement(cachedCommit, beforeInput: before, appendSpace: true)
@@ -106,7 +110,8 @@ final class KeyboardViewController: KeyboardInputViewController {
             }
         }
 
-        if let topCorrection = topCorrectionForTrailingWord(in: before) {
+        if currentTraits.allowsAutocorrection,
+           let topCorrection = topCorrectionForTrailingWord(in: before) {
             deleteTrailingWord(from: before)
             proxy.insertText(topCorrection)
         }
@@ -118,10 +123,12 @@ final class KeyboardViewController: KeyboardInputViewController {
 
     func handleReturnAction() -> Bool {
         guard let proxy = activeTextDocumentProxy else { return false }
-        guard currentTraits.allowsAutocorrection else { return false }
         guard proxy.selectedText?.isEmpty ?? true else { return false }
         let before = proxy.documentContextBeforeInput ?? ""
         let displayMode = currentDisplayMode
+        guard allowsBilingualConversionCommit(beforeInput: before, displayMode: displayMode) else {
+            return false
+        }
         if displayMode.isJapaneseHeavy {
             if let cachedCommit = cachedJapaneseCommit(beforeInput: before, displayMode: displayMode) {
                 commitSuggestionReplacement(
@@ -169,7 +176,8 @@ final class KeyboardViewController: KeyboardInputViewController {
             rawConfirmedContext = nil
             return
         }
-        guard currentTraits.allowsAutocorrection else {
+        let traits = currentTraits
+        guard traits.allowsBilingualConversionSuggestions else {
             cancelPendingJapaneseSuggestions()
             suggestions.update(displayMode: displayMode, previewTitle: nil, items: [])
             setKeepReturnKeyActive(false)
@@ -196,14 +204,20 @@ final class KeyboardViewController: KeyboardInputViewController {
             displayMode: displayMode,
             classifier: displayPreviewClassifier
         )
+        let shouldRequestJapanese = shouldRequestJapaneseSuggestions(
+            beforeInput: before,
+            displayMode: displayMode,
+            previewTitle: previewTitle
+        )
 
-        if let cachedJapanese = cachedJapaneseSuggestionResult(beforeInput: before, displayMode: displayMode) {
+        if shouldRequestJapanese,
+           let cachedJapanese = cachedJapaneseSuggestionResult(beforeInput: before, displayMode: displayMode) {
             if !cachedJapanese.items.isEmpty {
                 suggestions.update(displayMode: displayMode, previewTitle: previewTitle, items: cachedJapanese.items)
                 setKeepReturnKeyActive(!displayMode.isJapaneseHeavy && cachedJapanese.keepRawSuggestion != nil)
                 return
             }
-        } else if shouldRequestJapaneseSuggestions(beforeInput: before, displayMode: displayMode, previewTitle: previewTitle) {
+        } else if shouldRequestJapanese {
             suggestions.update(displayMode: displayMode, previewTitle: previewTitle, items: [])
             setKeepReturnKeyActive(false)
             scheduleJapaneseSuggestions(beforeInput: before, displayMode: displayMode)
@@ -211,6 +225,12 @@ final class KeyboardViewController: KeyboardInputViewController {
         }
 
         cancelPendingJapaneseSuggestions()
+
+        guard traits.allowsAutocorrection else {
+            suggestions.update(displayMode: displayMode, previewTitle: previewTitle, items: [])
+            setKeepReturnKeyActive(false)
+            return
+        }
 
         let word = Self.trailingEnglishWord(in: before)
         guard !word.isEmpty else {
@@ -482,6 +502,26 @@ final class KeyboardViewController: KeyboardInputViewController {
         )
     }
 
+    private func allowsBilingualConversionCommit(
+        beforeInput context: String,
+        displayMode: CompositionDisplayMode
+    ) -> Bool {
+        let traits = currentTraits
+        guard traits.allowsBilingualConversionSuggestions else { return false }
+        guard traits.contentKind == .url else { return true }
+
+        let previewTitle = BilingualComposer.displayPreview(
+            beforeInput: context,
+            displayMode: displayMode,
+            classifier: displayPreviewClassifier
+        )
+        return shouldRequestJapaneseSuggestions(
+            beforeInput: context,
+            displayMode: displayMode,
+            previewTitle: previewTitle
+        )
+    }
+
     private func scheduleJapaneseSuggestions(
         beforeInput context: String,
         displayMode: CompositionDisplayMode
@@ -653,6 +693,10 @@ final class KeyboardViewController: KeyboardInputViewController {
                 autocorrectionEnabled: autocorrectionEnabled,
                 contentKind: contentKind
             )
+        }
+
+        var allowsBilingualConversionSuggestions: Bool {
+            NativeKeyboardPolicy.allowsBilingualConversionSuggestions(contentKind: contentKind)
         }
 
         @MainActor

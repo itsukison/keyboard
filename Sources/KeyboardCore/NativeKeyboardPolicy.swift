@@ -49,6 +49,17 @@ public enum NativeKeyboardPolicy {
         }
     }
 
+    public static func allowsBilingualConversionSuggestions(
+        contentKind: NativeKeyboardContentKind
+    ) -> Bool {
+        switch contentKind {
+        case .prose, .webSearch, .url:
+            return true
+        case .email, .numeric, .phone:
+            return false
+        }
+    }
+
     public static func shouldApplyDoubleSpacePeriod(
         beforeInput context: String,
         autocorrectionEnabled: Bool,

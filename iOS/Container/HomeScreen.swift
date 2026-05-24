@@ -4,6 +4,7 @@ import UIKit
 struct HomeScreen: View {
     @ObservedObject private var stats = ConversionStats.shared
     @State private var showDemo = false
+    @State private var isLoading = true
 
     private let tips: [Tip] = [
         .init(
@@ -27,30 +28,38 @@ struct HomeScreen: View {
     ]
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 0) {
-                HomeHeader(stats: stats)
-                    .padding(.top, BikeyMetrics.Spacing.s)
+        ZStack {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 0) {
+                    HomeHeader(stats: stats)
+                        .padding(.top, BikeyMetrics.Spacing.s)
 
-                KeyboardEnabledBanner()
-                    .padding(.top, BikeyMetrics.Spacing.m)
+                    KeyboardEnabledBanner()
+                        .padding(.top, BikeyMetrics.Spacing.m)
 
-                HeroCard(onTryDemo: { showDemo = true })
-                    .padding(.top, BikeyMetrics.Spacing.m - 2)
+                    HeroCard(onTryDemo: { showDemo = true })
+                        .padding(.top, BikeyMetrics.Spacing.m - 2)
 
-                TipsHeader(title: "Tips")
-                    .padding(.top, BikeyMetrics.Spacing.m)
+                    TipsHeader(title: "Tips")
+                        .padding(.top, BikeyMetrics.Spacing.m)
 
-                VStack(spacing: BikeyMetrics.Spacing.m - 2) {
-                    ForEach(tips) { tip in
-                        TipCard(tip: tip)
+                    VStack(spacing: BikeyMetrics.Spacing.m - 2) {
+                        ForEach(tips) { tip in
+                            TipCard(tip: tip)
+                        }
                     }
-                }
-                .padding(.top, BikeyMetrics.Spacing.s + 2)
+                    .padding(.top, BikeyMetrics.Spacing.s + 2)
 
-                Spacer(minLength: BikeyMetrics.Sizing.tabBarHeight + 32)
+                    Spacer(minLength: BikeyMetrics.Sizing.tabBarHeight + 32)
+                }
+                .padding(.horizontal, BikeyMetrics.Sizing.screenHorizontalInset)
             }
-            .padding(.horizontal, BikeyMetrics.Sizing.screenHorizontalInset)
+            .opacity(isLoading ? 0 : 1)
+
+            if isLoading {
+                HomeSkeletonView()
+                    .transition(.opacity)
+            }
         }
         .frame(maxWidth: .infinity)
         .background(AppColor.background.ignoresSafeArea())
@@ -60,6 +69,14 @@ struct HomeScreen: View {
                 .presentationDragIndicator(.hidden)
                 .presentationCornerRadius(32)
                 .presentationBackground(AppColor.background)
+        }
+        .onAppear {
+            guard isLoading else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                withAnimation(.easeOut(duration: 0.28)) {
+                    isLoading = false
+                }
+            }
         }
     }
 }
@@ -447,6 +464,149 @@ private struct DemoTextField: View {
             .animation(.easeInOut(duration: 0.18), value: isFocused.wrappedValue)
             .contentShape(Rectangle())
             .onTapGesture { isFocused.wrappedValue = true }
+    }
+}
+
+// MARK: - Skeleton loader
+
+private struct HomeSkeletonView: View {
+    var body: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 0) {
+                SkeletonHeader()
+                    .padding(.top, BikeyMetrics.Spacing.s)
+
+                SkeletonBanner()
+                    .padding(.top, BikeyMetrics.Spacing.m)
+
+                SkeletonHero()
+                    .padding(.top, BikeyMetrics.Spacing.m - 2)
+
+                SkeletonTipsHeader()
+                    .padding(.top, BikeyMetrics.Spacing.m)
+
+                VStack(spacing: BikeyMetrics.Spacing.m - 2) {
+                    ForEach(0..<3, id: \.self) { _ in
+                        SkeletonTipCard()
+                    }
+                }
+                .padding(.top, BikeyMetrics.Spacing.s + 2)
+
+                Spacer(minLength: BikeyMetrics.Sizing.tabBarHeight + 32)
+            }
+            .padding(.horizontal, BikeyMetrics.Sizing.screenHorizontalInset)
+        }
+        .disabled(true)
+    }
+}
+
+private struct SkeletonHeader: View {
+    var body: some View {
+        HStack(alignment: .center, spacing: BikeyMetrics.Spacing.s + 2) {
+            HStack(spacing: BikeyMetrics.Spacing.s - 1) {
+                SkeletonShape(shape: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .frame(width: 26, height: 26)
+
+                SkeletonShape(shape: Capsule())
+                    .frame(width: 58, height: 18)
+            }
+
+            Spacer(minLength: BikeyMetrics.Spacing.s)
+
+            SkeletonShape(shape: Capsule())
+                .frame(width: 132, height: 38)
+        }
+        .frame(height: 40)
+    }
+}
+
+private struct SkeletonBanner: View {
+    var body: some View {
+        SkeletonShape(shape: Capsule())
+            .frame(maxWidth: .infinity)
+            .frame(height: 38)
+    }
+}
+
+private struct SkeletonHero: View {
+    var body: some View {
+        SkeletonShape(shape: RoundedRectangle(cornerRadius: BikeyMetrics.Radius.hero - 8, style: .continuous))
+            .frame(height: 220)
+            .shadow(color: .black.opacity(0.04), radius: 14, x: 0, y: 6)
+    }
+}
+
+private struct SkeletonTipsHeader: View {
+    var body: some View {
+        HStack {
+            SkeletonShape(shape: Capsule())
+                .frame(width: 36, height: 14)
+            Spacer()
+        }
+        .padding(.horizontal, 2)
+    }
+}
+
+private struct SkeletonTipCard: View {
+    var body: some View {
+        HStack(alignment: .top, spacing: BikeyMetrics.Spacing.m - 4) {
+            VStack(alignment: .leading, spacing: 8) {
+                SkeletonShape(shape: Capsule())
+                    .frame(width: 64, height: 11)
+
+                SkeletonShape(shape: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                    .frame(width: 200, height: 14)
+                    .padding(.top, 2)
+
+                SkeletonShape(shape: Capsule())
+                    .frame(width: 168, height: 12)
+                    .padding(.top, 6)
+            }
+
+            Spacer(minLength: 0)
+
+            SkeletonShape(shape: Circle())
+                .frame(width: 32, height: 32)
+        }
+        .padding(.horizontal, BikeyMetrics.Spacing.m)
+        .padding(.vertical, BikeyMetrics.Spacing.m - 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white, in: RoundedRectangle(cornerRadius: BikeyMetrics.Radius.largeCard, style: .continuous))
+        .shadow(color: .black.opacity(0.04), radius: 14, x: 0, y: 6)
+    }
+}
+
+private struct SkeletonShape<S: Shape>: View {
+    let shape: S
+    @State private var phase: CGFloat = -1
+
+    var body: some View {
+        shape
+            .fill(AppColor.paleLavender.opacity(0.72))
+            .overlay {
+                GeometryReader { proxy in
+                    let width = proxy.size.width
+                    LinearGradient(
+                        stops: [
+                            .init(color: .white.opacity(0.0), location: 0.0),
+                            .init(color: .white.opacity(0.55), location: 0.5),
+                            .init(color: .white.opacity(0.0), location: 1.0)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: width * 0.6)
+                    .offset(x: phase * width)
+                    .blendMode(.plusLighter)
+                }
+                .clipShape(shape)
+                .allowsHitTesting(false)
+            }
+            .onAppear {
+                withAnimation(.linear(duration: 1.25).repeatForever(autoreverses: false)) {
+                    phase = 1.6
+                }
+            }
     }
 }
 

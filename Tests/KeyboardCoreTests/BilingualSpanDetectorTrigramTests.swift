@@ -164,6 +164,46 @@ final class BilingualSpanDetectorTrigramTests: XCTestCase {
         XCTAssertTrue(spans.allSatisfy { $0.kind == .japanese })
     }
 
+    func testJapaneseTakedoEndingDoesNotSplitTakeAsEnglish() {
+        for word in ["takedo", "mitakedo", "yomitakedo", "tabetakedo", "kekkouiitoomottakedo"] {
+            let spans = detector.detect(word)
+            XCTAssertEqual(spans.count, 1, "word=\(word) got \(spans.map { "\($0.kind.rawValue):\($0.raw)" })")
+            XCTAssertEqual(spans.first?.kind, .japanese, "word=\(word)")
+        }
+    }
+
+    func testKanaValidJapaneseReadingsDoNotBecomeEmbeddedEnglish() {
+        for word in ["koremade", "mademo", "nameta", "sameta", "tooku", "komorebi", "hometekureta"] {
+            let spans = detector.detect(word)
+            XCTAssertEqual(spans.count, 1, "word=\(word) got \(spans.map { "\($0.kind.rawValue):\($0.raw)" })")
+            XCTAssertEqual(spans.first?.kind, .japanese, "word=\(word)")
+        }
+    }
+
+    func testProtectedReadingsStillClassifyAsStandaloneEnglish() {
+        for word in ["home", "made", "more", "name", "same", "take", "took"] {
+            let spans = detector.detect(word)
+            XCTAssertEqual(spans.count, 1, "word=\(word)")
+            XCTAssertEqual(spans.first?.kind, .english, "word=\(word)")
+        }
+    }
+
+    func testStrongEmbeddedEnglishStillSplitsAfterJapaneseProtection() {
+        for (word, english) in [
+            ("kyounomeetingha3jini", "meeting"),
+            ("kyounomessageha", "message"),
+            ("kyounocallshita", "call"),
+            ("kyounocodekaku", "code"),
+            ("kyounoworkshita", "work"),
+        ] {
+            let spans = detector.detect(word)
+            XCTAssertTrue(
+                spans.contains { $0.raw == english && $0.kind == .english },
+                "word=\(word) got \(spans.map { "\($0.kind.rawValue):\($0.raw)" })"
+            )
+        }
+    }
+
     // MARK: - Single-char fallthrough
 
     func testSingleCharILeavesPriorPathIntact() {

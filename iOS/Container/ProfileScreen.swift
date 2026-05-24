@@ -10,6 +10,7 @@ struct ProfileScreen: View {
     @State private var showPersonalInfo = false
     @State private var phraseCount: Int = UserDictionaryStore.readEntries().count
     @State private var showSignOutConfirm = false
+    @State private var showAbout = false
 
     var body: some View {
         NavigationStack {
@@ -47,6 +48,20 @@ struct ProfileScreen: View {
                     )
                     .padding(.top, BikeyMetrics.Spacing.s)
 
+                    ProfileSectionTitle("About")
+                        .padding(.top, BikeyMetrics.Spacing.l + 2)
+
+                    ProfileListCard(
+                        rows: [
+                            .init(
+                                icon: "info.circle",
+                                title: "About Bikey",
+                                action: { showAbout = true }
+                            )
+                        ]
+                    )
+                    .padding(.top, BikeyMetrics.Spacing.s)
+
                     Spacer(minLength: 84)
                 }
                 .frame(maxWidth: .infinity)
@@ -54,6 +69,9 @@ struct ProfileScreen: View {
             .padding(.horizontal, BikeyMetrics.Sizing.screenHorizontalInset)
             .navigationDestination(isPresented: $showPersonalInfo) {
                 PersonalInformationView(profile: session.profile)
+            }
+            .navigationDestination(isPresented: $showAbout) {
+                AboutScreen()
             }
             .onAppear {
                 syncCompositionDisplayModeFromProfile()
@@ -63,14 +81,26 @@ struct ProfileScreen: View {
                 syncCompositionDisplayModeFromProfile()
                 phraseCount = UserDictionaryStore.readEntries().count
             }
-            .alert("Sign out of Bikey?", isPresented: $showSignOutConfirm) {
-                Button("Cancel", role: .cancel) {}
-                Button("Sign Out", role: .destructive) {
-                    Task { await session.signOut() }
+            .overlay {
+                if showSignOutConfirm {
+                    SignOutConfirmModal(
+                        onCancel: {
+                            withAnimation(.easeOut(duration: 0.18)) {
+                                showSignOutConfirm = false
+                            }
+                        },
+                        onConfirm: {
+                            withAnimation(.easeOut(duration: 0.18)) {
+                                showSignOutConfirm = false
+                            }
+                            Task { await session.signOut() }
+                        }
+                    )
+                    .transition(.opacity)
+                    .zIndex(1)
                 }
-            } message: {
-                Text("You'll need to sign in again to access your saved phrases and settings.")
             }
+            .animation(.easeOut(duration: 0.18), value: showSignOutConfirm)
             .onChange(of: compositionDisplayMode) { newValue in
                 guard newValue != lastConfirmedCompositionDisplayMode else {
                     KeyboardSettingsStore.writeCompositionDisplayMode(newValue)
@@ -445,5 +475,82 @@ private struct ProfileListRow: View {
         .padding(.horizontal, BikeyMetrics.Spacing.l - 1)
         .frame(minHeight: 54)
         .contentShape(Rectangle())
+    }
+}
+
+private struct SignOutConfirmModal: View {
+    let onCancel: () -> Void
+    let onConfirm: () -> Void
+
+    private let destructive = Color(red: 0.847, green: 0.306, blue: 0.345)
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.34)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture(perform: onCancel)
+
+            VStack(spacing: 0) {
+                ZStack {
+                    Circle()
+                        .fill(Color.black.opacity(0.06))
+                        .frame(width: 58, height: 58)
+                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                        .font(.system(size: 22, weight: .regular))
+                        .foregroundStyle(AppColor.ink)
+                }
+                .padding(.top, BikeyMetrics.Spacing.l + 2)
+
+                Text("Sign out of Bikey?")
+                    .bikeyFont(18, weight: .semibold, relativeTo: .headline)
+                    .foregroundStyle(AppColor.ink)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, BikeyMetrics.Spacing.m)
+
+                Text("You'll need to sign in again to access your saved phrases and settings.")
+                    .bikeyFont(13, weight: .regular, relativeTo: .footnote)
+                    .foregroundStyle(AppColor.muted)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 6)
+                    .padding(.horizontal, BikeyMetrics.Spacing.l)
+
+                VStack(spacing: 8) {
+                    Button(action: onConfirm) {
+                        Text("Sign Out")
+                            .bikeyFont(15, weight: .semibold, relativeTo: .body)
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(destructive, in: Capsule())
+                            .shadow(color: destructive.opacity(0.28), radius: 10, x: 0, y: 5)
+                    }
+                    .buttonStyle(.plain)
+
+                    Button(action: onCancel) {
+                        Text("Cancel")
+                            .bikeyFont(15, weight: .medium, relativeTo: .body)
+                            .foregroundStyle(AppColor.ink)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(.white, in: Capsule())
+                            .overlay(
+                                Capsule()
+                                    .stroke(AppColor.rule.opacity(0.45), lineWidth: 0.6)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, BikeyMetrics.Spacing.m)
+                .padding(.top, BikeyMetrics.Spacing.l)
+                .padding(.bottom, BikeyMetrics.Spacing.m)
+            }
+            .frame(maxWidth: 320)
+            .background(.white, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .shadow(color: .black.opacity(0.22), radius: 36, x: 0, y: 16)
+            .padding(.horizontal, BikeyMetrics.Spacing.xl)
+        }
     }
 }

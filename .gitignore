@@ -8,3 +8,4 @@ weights/*.gguf
 BilingualKeyboard.xcodeproj
 *.xcworkspace
 .DS_Store
+web/
