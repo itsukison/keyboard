@@ -71,12 +71,16 @@ public final class BilingualComposer {
     private let displayClassifier: BilingualLanguageClassifier
     private let converter: JapaneseCandidateConverting
     private let dictionaryEntries: @Sendable () -> [UserDictionaryEntry]
+    private let conversionPreferenceEntries: @Sendable () -> [ConversionPreferenceEntry]
 
     public init(
         classifier: BilingualLanguageClassifier = .init(),
         converter: JapaneseCandidateConverting,
         dictionaryEntries: @escaping @Sendable () -> [UserDictionaryEntry] = {
             UserDictionaryStore.readEntries()
+        },
+        conversionPreferenceEntries: @escaping @Sendable () -> [ConversionPreferenceEntry] = {
+            ConversionPreferenceStore.readEntries()
         }
     ) {
         self.classifier = classifier
@@ -86,6 +90,7 @@ public final class BilingualComposer {
         )
         self.converter = converter
         self.dictionaryEntries = dictionaryEntries
+        self.conversionPreferenceEntries = conversionPreferenceEntries
     }
 
     public func commitForSpace(beforeInput context: String) -> BilingualCommit? {
@@ -100,6 +105,7 @@ public final class BilingualComposer {
                 kind: .dictionary
             )
         }
+        guard !prefersRawJapaneseToken(token) else { return nil }
 
         guard let analysis = analyze(beforeInput: context) else { return nil }
         guard analysis.primaryReplacement != analysis.rawToken else { return nil }
@@ -126,6 +132,9 @@ public final class BilingualComposer {
             return BilingualSuggestionSet(keepRaw: nil, japanese: [])
         }
         let dictionaryEntry = dictionaryEntry(for: token)
+        if dictionaryEntry == nil, prefersRawJapaneseToken(token) {
+            return BilingualSuggestionSet(keepRaw: nil, japanese: [])
+        }
         let analysis = analyze(beforeInput: context)
         guard dictionaryEntry != nil || analysis != nil else {
             return BilingualSuggestionSet(keepRaw: nil, japanese: [])
@@ -221,18 +230,25 @@ public final class BilingualComposer {
             .contains { $0.language == .japanese }
     }
 
+    public static func endsWithJapaneseText(_ text: String) -> Bool {
+        for ch in text.reversed() {
+            if ch.isWhitespace || ch.isJapaneseTrailingPunctuation {
+                continue
+            }
+            return ch.hasJapaneseTextScalar
+        }
+        return false
+    }
+
     private struct Analysis {
         let rawToken: String
         let spans: [BilingualSpan]
         let convertedSpans: [ConvertedSpan]
         let firstJapaneseIndex: Int
-
-        var firstJapaneseCandidates: [String] {
-            convertedSpans[firstJapaneseIndex].candidates
-        }
+        let firstJapaneseCandidates: [String]
 
         var primaryReplacement: String {
-            replacement(firstJapaneseCandidate: nil)
+            replacement(firstJapaneseCandidate: firstJapaneseCandidates.first)
         }
 
         func replacement(firstJapaneseCandidate: String?) -> String {
@@ -258,6 +274,14 @@ public final class BilingualComposer {
         UserDictionaryStore.lookupEntry(for: token, in: dictionaryEntries())
     }
 
+    private func prefersRawJapaneseToken(_ token: String) -> Bool {
+        ConversionPreferenceStore.shouldPreferRaw(
+            scope: .japanese,
+            input: token,
+            entries: conversionPreferenceEntries()
+        )
+    }
+
     private func analyze(beforeInput context: String) -> Analysis? {
         let token = Self.trailingConvertibleToken(in: context)
         guard token.count >= 2 else { return nil }
@@ -269,6 +293,7 @@ public final class BilingualComposer {
         var convertedSpans: [ConvertedSpan] = []
         var firstJapaneseIndex: Int?
         var runningJapaneseContext = Self.japaneseOnlySuffix(from: contextBeforeToken)
+        let preferenceEntries = conversionPreferenceEntries()
 
         for span in spans {
             switch span.language {
@@ -290,12 +315,66 @@ public final class BilingualComposer {
         }
 
         guard let firstJapaneseIndex else { return nil }
+        let firstJapaneseCandidates = Self.rerankedFirstJapaneseCandidates(
+            rawToken: token,
+            convertedSpans: convertedSpans,
+            firstJapaneseIndex: firstJapaneseIndex,
+            preferenceEntries: preferenceEntries
+        )
         return Analysis(
             rawToken: token,
             spans: spans,
             convertedSpans: convertedSpans,
-            firstJapaneseIndex: firstJapaneseIndex
+            firstJapaneseIndex: firstJapaneseIndex,
+            firstJapaneseCandidates: firstJapaneseCandidates
         )
+    }
+
+    private static func rerankedFirstJapaneseCandidates(
+        rawToken: String,
+        convertedSpans: [ConvertedSpan],
+        firstJapaneseIndex: Int,
+        preferenceEntries: [ConversionPreferenceEntry]
+    ) -> [String] {
+        let candidates = convertedSpans[firstJapaneseIndex].candidates
+        guard candidates.count > 1 else { return candidates }
+
+        var replacementToCandidate: [String: String] = [:]
+        var replacements: [String] = []
+        for candidate in candidates {
+            let replacement = replacement(
+                convertedSpans: convertedSpans,
+                firstJapaneseIndex: firstJapaneseIndex,
+                firstJapaneseCandidate: candidate
+            )
+            guard replacementToCandidate[replacement] == nil else { continue }
+            replacementToCandidate[replacement] = candidate
+            replacements.append(replacement)
+        }
+
+        let rankedReplacements = ConversionPreferenceStore.rerank(
+            scope: .japanese,
+            input: rawToken,
+            candidates: replacements,
+            entries: preferenceEntries
+        )
+        return rankedReplacements.compactMap { replacementToCandidate[$0] }
+    }
+
+    private static func replacement(
+        convertedSpans: [ConvertedSpan],
+        firstJapaneseIndex: Int,
+        firstJapaneseCandidate: String
+    ) -> String {
+        var output = ""
+        for index in convertedSpans.indices {
+            if index == firstJapaneseIndex {
+                output += firstJapaneseCandidate
+            } else {
+                output += convertedSpans[index].mainText
+            }
+        }
+        return output
     }
 
     public static func trailingConvertibleToken(in text: String) -> String {
@@ -318,6 +397,23 @@ public final class BilingualComposer {
 }
 
 private extension Character {
+    var hasJapaneseTextScalar: Bool {
+        unicodeScalars.contains { scalar in
+            (0x3040...0x30FF).contains(scalar.value) || (0x4E00...0x9FFF).contains(scalar.value)
+        }
+    }
+
+    var isJapaneseTrailingPunctuation: Bool {
+        guard !unicodeScalars.isEmpty else { return false }
+        return unicodeScalars.allSatisfy { scalar in
+            (0x3000...0x303F).contains(scalar.value) ||
+                (0xFF01...0xFF0F).contains(scalar.value) ||
+                (0xFF1A...0xFF20).contains(scalar.value) ||
+                (0xFF3B...0xFF40).contains(scalar.value) ||
+                (0xFF5B...0xFF65).contains(scalar.value)
+        }
+    }
+
     var isConvertibleTokenCharacter: Bool {
         guard unicodeScalars.count == 1, let scalar = unicodeScalars.first else { return false }
         let value = scalar.value

@@ -5,11 +5,15 @@ import UIKit
 struct ProfileScreen: View {
     @EnvironmentObject private var session: UserSession
     @ObservedObject private var stats = ConversionStats.shared
-    @State private var compositionDisplayMode = KeyboardSettingsStore.readCompositionDisplayMode()
-    @State private var lastConfirmedCompositionDisplayMode = KeyboardSettingsStore.readCompositionDisplayMode()
+    @State private var keyboardStyle = KeyboardSettingsStore.readKeyboardStyle()
+    @State private var hapticsEnabled = KeyboardSettingsStore.readHapticsEnabled()
     @State private var showPersonalInfo = false
     @State private var phraseCount: Int = UserDictionaryStore.readEntries().count
     @State private var showSignOutConfirm = false
+    @State private var showDeleteAccountConfirm = false
+    @State private var isDeletingAccount = false
+    @State private var deleteAccountErrorMessage: String?
+    @State private var showKeyboardStyleInfo = false
     @State private var showAbout = false
 
     var body: some View {
@@ -34,17 +38,33 @@ struct ProfileScreen: View {
                             ),
                             .init(
                                 icon: "character.cursor.ibeam",
-                                title: "Language Mode",
-                                toggle: .languageMode
+                                title: "Show ー Key",
+                                toggle: .keyboardStyle,
+                                infoAction: {
+                                    withAnimation(.easeOut(duration: 0.18)) {
+                                        showKeyboardStyleInfo = true
+                                    }
+                                }
                             ),
-                            .init(icon: "crown", title: "Plan", trailing: "Bikey Pro"),
+                            .init(
+                                icon: "hand.tap",
+                                title: "Haptic Feedback",
+                                toggle: .haptics
+                            ),
                             .init(
                                 icon: "rectangle.portrait.and.arrow.right",
                                 title: "Sign Out",
                                 action: { showSignOutConfirm = true }
+                            ),
+                            .init(
+                                icon: "trash",
+                                title: "Delete Account",
+                                isDestructive: true,
+                                action: { showDeleteAccountConfirm = true }
                             )
                         ],
-                        compositionDisplayMode: $compositionDisplayMode
+                        keyboardStyle: $keyboardStyle,
+                        hapticsEnabled: $hapticsEnabled
                     )
                     .padding(.top, BikeyMetrics.Spacing.s)
 
@@ -74,11 +94,11 @@ struct ProfileScreen: View {
                 AboutScreen()
             }
             .onAppear {
-                syncCompositionDisplayModeFromProfile()
+                keyboardStyle = KeyboardSettingsStore.readKeyboardStyle()
                 phraseCount = UserDictionaryStore.readEntries().count
             }
             .onChange(of: session.profile) { _ in
-                syncCompositionDisplayModeFromProfile()
+                keyboardStyle = KeyboardSettingsStore.readKeyboardStyle()
                 phraseCount = UserDictionaryStore.readEntries().count
             }
             .overlay {
@@ -99,34 +119,57 @@ struct ProfileScreen: View {
                     .transition(.opacity)
                     .zIndex(1)
                 }
+                if showDeleteAccountConfirm {
+                    DeleteAccountConfirmModal(
+                        isDeleting: isDeletingAccount,
+                        errorMessage: deleteAccountErrorMessage,
+                        onCancel: {
+                            withAnimation(.easeOut(duration: 0.18)) {
+                                showDeleteAccountConfirm = false
+                                deleteAccountErrorMessage = nil
+                            }
+                        },
+                        onConfirm: {
+                            deleteAccountErrorMessage = nil
+                            isDeletingAccount = true
+                            Task {
+                                defer { isDeletingAccount = false }
+                                do {
+                                    try await session.deleteAccount()
+                                    withAnimation(.easeOut(duration: 0.18)) {
+                                        showDeleteAccountConfirm = false
+                                    }
+                                } catch {
+                                    deleteAccountErrorMessage = error.localizedDescription
+                                }
+                            }
+                        }
+                    )
+                    .transition(.opacity)
+                    .zIndex(2)
+                }
+                if showKeyboardStyleInfo {
+                    KeyboardStyleInfoModal(
+                        onDismiss: {
+                            withAnimation(.easeOut(duration: 0.18)) {
+                                showKeyboardStyleInfo = false
+                            }
+                        }
+                    )
+                    .transition(.opacity)
+                    .zIndex(3)
+                }
             }
             .animation(.easeOut(duration: 0.18), value: showSignOutConfirm)
-            .onChange(of: compositionDisplayMode) { newValue in
-                guard newValue != lastConfirmedCompositionDisplayMode else {
-                    KeyboardSettingsStore.writeCompositionDisplayMode(newValue)
-                    return
-                }
-                KeyboardSettingsStore.writeCompositionDisplayMode(newValue)
-                Task { @MainActor in
-                    do {
-                        try await session.updateCompositionDisplayMode(newValue)
-                        lastConfirmedCompositionDisplayMode = newValue
-                    } catch {
-                        let rollback = lastConfirmedCompositionDisplayMode
-                        KeyboardSettingsStore.writeCompositionDisplayMode(rollback)
-                        compositionDisplayMode = rollback
-                    }
-                }
+            .animation(.easeOut(duration: 0.18), value: showDeleteAccountConfirm)
+            .animation(.easeOut(duration: 0.18), value: showKeyboardStyleInfo)
+            .onChange(of: hapticsEnabled) { newValue in
+                KeyboardSettingsStore.writeHapticsEnabled(newValue)
+            }
+            .onChange(of: keyboardStyle) { newValue in
+                KeyboardSettingsStore.writeKeyboardStyle(newValue)
             }
         }
-    }
-
-    private func syncCompositionDisplayModeFromProfile() {
-        let mode = session.profile?.compositionDisplayMode
-            ?? KeyboardSettingsStore.readCompositionDisplayMode()
-        lastConfirmedCompositionDisplayMode = mode
-        compositionDisplayMode = mode
-        KeyboardSettingsStore.writeCompositionDisplayMode(mode)
     }
 }
 
@@ -199,24 +242,11 @@ private struct ProfileCard: View {
                         .frame(width: 52, height: 52)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 6) {
-                            Text(displayName.isEmpty ? "Bikey user" : displayName)
-                                .bikeyFont(20, weight: .regular, relativeTo: .title2)
-                                .foregroundStyle(.white)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.84)
-
-                            Text("PRO")
-                                .bikeyFont(8, weight: .bold, relativeTo: .caption2)
-                                .foregroundStyle(.white.opacity(0.88))
-                                .padding(.horizontal, 6)
-                                .frame(height: 14)
-                                .background(.white.opacity(0.18), in: Capsule())
-                                .overlay {
-                                    Capsule()
-                                        .stroke(.white.opacity(0.45), lineWidth: 1)
-                                }
-                        }
+                        Text(displayName.isEmpty ? "Bikey user" : displayName)
+                            .bikeyFont(20, weight: .regular, relativeTo: .title2)
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.84)
 
                         Text("\(stats.conversionsDisplay) conversions\nwith Bikey")
                             .bikeyFont(12, weight: .regular, relativeTo: .caption)
@@ -370,14 +400,16 @@ private struct ProfileSectionTitle: View {
 
 private struct ProfileListCard: View {
     let rows: [ProfileRowModel]
-    var compositionDisplayMode: Binding<CompositionDisplayMode>? = nil
+    var keyboardStyle: Binding<KeyboardStyle>? = nil
+    var hapticsEnabled: Binding<Bool>? = nil
 
     var body: some View {
         VStack(spacing: 0) {
             ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
                 ProfileListRow(
                     model: row,
-                    compositionDisplayMode: compositionDisplayMode
+                    keyboardStyle: keyboardStyle,
+                    hapticsEnabled: hapticsEnabled
                 )
 
                 if index < rows.count - 1 {
@@ -395,13 +427,16 @@ private struct ProfileListCard: View {
 
 private struct ProfileRowModel {
     enum ToggleKind {
-        case languageMode
+        case keyboardStyle
+        case haptics
     }
 
     let icon: String
     let title: String
     let trailing: String?
     let toggle: ToggleKind?
+    let isDestructive: Bool
+    let infoAction: (() -> Void)?
     let action: (() -> Void)?
 
     init(
@@ -409,24 +444,29 @@ private struct ProfileRowModel {
         title: String,
         trailing: String? = nil,
         toggle: ToggleKind? = nil,
+        isDestructive: Bool = false,
+        infoAction: (() -> Void)? = nil,
         action: (() -> Void)? = nil
     ) {
         self.icon = icon
         self.title = title
         self.trailing = trailing
         self.toggle = toggle
+        self.isDestructive = isDestructive
+        self.infoAction = infoAction
         self.action = action
     }
 }
 
 private struct ProfileListRow: View {
     let model: ProfileRowModel
-    var compositionDisplayMode: Binding<CompositionDisplayMode>?
+    var keyboardStyle: Binding<KeyboardStyle>?
+    var hapticsEnabled: Binding<Bool>?
 
-    private var isJapaneseHeavy: Binding<Bool> {
+    private var isJapaneseRomaji: Binding<Bool> {
         Binding(
-            get: { compositionDisplayMode?.wrappedValue == .japaneseHeavyKana },
-            set: { compositionDisplayMode?.wrappedValue = $0 ? .japaneseHeavyKana : .balancedRaw }
+            get: { keyboardStyle?.wrappedValue == .japaneseRomaji },
+            set: { keyboardStyle?.wrappedValue = $0 ? .japaneseRomaji : .standard }
         )
     }
 
@@ -442,22 +482,38 @@ private struct ProfileListRow: View {
     }
 
     private var rowContent: some View {
-        HStack(spacing: BikeyMetrics.Spacing.m - 3) {
+        let destructive = Color(red: 0.847, green: 0.306, blue: 0.345)
+        return HStack(spacing: BikeyMetrics.Spacing.m - 3) {
             Image(systemName: model.icon)
                 .font(.system(size: 19, weight: .regular))
-                .foregroundStyle(AppColor.ink.opacity(0.86))
+                .foregroundStyle(model.isDestructive ? destructive : AppColor.ink.opacity(0.86))
                 .frame(width: 22)
 
             Text(model.title)
                 .bikeyFont(15, weight: .regular, relativeTo: .body)
-                .foregroundStyle(AppColor.ink)
+                .foregroundStyle(model.isDestructive ? destructive : AppColor.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
 
+            if let infoAction = model.infoAction {
+                Button(action: infoAction) {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundStyle(AppColor.muted.opacity(0.82))
+                        .frame(width: 30, height: 30)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("About \(model.title)")
+            }
+
             Spacer()
 
-            if model.toggle == .languageMode, compositionDisplayMode != nil {
-                Toggle("", isOn: isJapaneseHeavy)
+            if model.toggle == .keyboardStyle, keyboardStyle != nil {
+                Toggle("", isOn: isJapaneseRomaji)
+                    .labelsHidden()
+                    .tint(AppColor.purple.opacity(0.82))
+            } else if model.toggle == .haptics, let hapticsEnabled {
+                Toggle("", isOn: hapticsEnabled)
                     .labelsHidden()
                     .tint(AppColor.purple.opacity(0.82))
             } else if let trailing = model.trailing {
@@ -542,6 +598,278 @@ private struct SignOutConfirmModal: View {
                             )
                     }
                     .buttonStyle(.plain)
+                }
+                .padding(.horizontal, BikeyMetrics.Spacing.m)
+                .padding(.top, BikeyMetrics.Spacing.l)
+                .padding(.bottom, BikeyMetrics.Spacing.m)
+            }
+            .frame(maxWidth: 320)
+            .background(.white, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .shadow(color: .black.opacity(0.22), radius: 36, x: 0, y: 16)
+            .padding(.horizontal, BikeyMetrics.Spacing.xl)
+        }
+    }
+}
+
+private struct KeyboardStyleInfoModal: View {
+    let onDismiss: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.34)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture(perform: onDismiss)
+
+            VStack(spacing: 0) {
+                ZStack {
+                    Circle()
+                        .fill(AppColor.paleLavender.opacity(0.92))
+                        .frame(width: 58, height: 58)
+                    Text("ー")
+                        .bikeyFont(25, weight: .regular, relativeTo: .title2)
+                        .foregroundStyle(AppColor.purple)
+                }
+                .padding(.top, BikeyMetrics.Spacing.l + 2)
+
+                Text("Show the ー key")
+                    .bikeyFont(18, weight: .semibold, relativeTo: .headline)
+                    .foregroundStyle(AppColor.ink)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, BikeyMetrics.Spacing.m)
+
+                Text("Adds a long vowel mark key next to L for Japanese romaji typing.")
+                    .bikeyFont(13, weight: .regular, relativeTo: .footnote)
+                    .foregroundStyle(AppColor.muted)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 6)
+                    .padding(.horizontal, BikeyMetrics.Spacing.l)
+
+                ProfileLongVowelKeyboardPreview()
+                    .padding(.horizontal, BikeyMetrics.Spacing.m)
+                    .padding(.top, BikeyMetrics.Spacing.l)
+
+                Button(action: onDismiss) {
+                    Text("Got it")
+                        .bikeyFont(15, weight: .semibold, relativeTo: .body)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(AppColor.charcoalAction, in: Capsule())
+                        .shadow(color: AppColor.charcoalAction.opacity(0.22), radius: 10, x: 0, y: 5)
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, BikeyMetrics.Spacing.m)
+                .padding(.top, BikeyMetrics.Spacing.l)
+                .padding(.bottom, BikeyMetrics.Spacing.m)
+            }
+            .frame(maxWidth: 340)
+            .background(.white, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .shadow(color: .black.opacity(0.22), radius: 36, x: 0, y: 16)
+            .padding(.horizontal, BikeyMetrics.Spacing.xl)
+        }
+    }
+}
+
+private struct ProfileLongVowelKeyboardPreview: View {
+    private let row1 = ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"]
+    private let row2 = ["A", "S", "D", "F", "G", "H", "J", "K", "L", "ー"]
+    private let row3 = ["Z", "X", "C", "V", "B", "N", "M"]
+
+    var body: some View {
+        VStack(spacing: 6) {
+            HStack(spacing: 4) {
+                ForEach(row1, id: \.self) { key in
+                    ProfilePreviewKey(label: key)
+                }
+            }
+
+            HStack(spacing: 4) {
+                ForEach(row2, id: \.self) { key in
+                    ProfilePreviewKey(
+                        label: key,
+                        isHighlighted: key == "ー"
+                    )
+                }
+            }
+
+            HStack(spacing: 4) {
+                ProfilePreviewIconKey(systemName: "shift.fill")
+                ForEach(row3, id: \.self) { key in
+                    ProfilePreviewKey(label: key)
+                }
+                ProfilePreviewIconKey(systemName: "delete.left")
+            }
+
+            HStack(spacing: 4) {
+                ProfilePreviewFixedKey(label: "123", width: 38)
+                ProfilePreviewIconKey(systemName: "globe", width: 34)
+                ProfilePreviewFixedKey(label: "space", width: nil)
+                ProfilePreviewFixedKey(label: "return", width: 58)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(red: 0.86, green: 0.87, blue: 0.89))
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Keyboard preview with ー after L")
+    }
+}
+
+private struct ProfilePreviewKey: View {
+    let label: String
+    var isHighlighted = false
+
+    var body: some View {
+        Text(label)
+            .bikeyFont(label == "ー" ? 16 : 11, weight: isHighlighted ? .semibold : .regular, relativeTo: .caption)
+            .foregroundStyle(isHighlighted ? AppColor.purple : AppColor.ink)
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
+            .frame(maxWidth: .infinity)
+            .frame(height: 30)
+            .background(
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .fill(isHighlighted ? AppColor.paleLavender : Color.white)
+                    .shadow(color: .black.opacity(0.16), radius: 0, x: 0, y: 1)
+            )
+            .overlay {
+                if isHighlighted {
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .stroke(AppColor.purple.opacity(0.34), lineWidth: 1)
+                }
+            }
+    }
+}
+
+private struct ProfilePreviewIconKey: View {
+    let systemName: String
+    var width: CGFloat = 34
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(.system(size: 11, weight: .regular))
+            .foregroundStyle(AppColor.ink)
+            .frame(width: width, height: 30)
+            .background(
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .fill(Color(red: 0.74, green: 0.76, blue: 0.78))
+                    .shadow(color: .black.opacity(0.16), radius: 0, x: 0, y: 1)
+            )
+    }
+}
+
+private struct ProfilePreviewFixedKey: View {
+    let label: String
+    let width: CGFloat?
+
+    var body: some View {
+        Text(label)
+            .bikeyFont(11, weight: .regular, relativeTo: .caption)
+            .foregroundStyle(AppColor.ink)
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
+            .frame(maxWidth: width == nil ? .infinity : nil)
+            .frame(width: width, height: 30)
+            .background(
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .fill(Color.white)
+                    .shadow(color: .black.opacity(0.16), radius: 0, x: 0, y: 1)
+            )
+    }
+}
+
+private struct DeleteAccountConfirmModal: View {
+    let isDeleting: Bool
+    let errorMessage: String?
+    let onCancel: () -> Void
+    let onConfirm: () -> Void
+
+    private let destructive = Color(red: 0.847, green: 0.306, blue: 0.345)
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.34)
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture { if !isDeleting { onCancel() } }
+
+            VStack(spacing: 0) {
+                ZStack {
+                    Circle()
+                        .fill(destructive.opacity(0.10))
+                        .frame(width: 58, height: 58)
+                    Image(systemName: "trash")
+                        .font(.system(size: 22, weight: .regular))
+                        .foregroundStyle(destructive)
+                }
+                .padding(.top, BikeyMetrics.Spacing.l + 2)
+
+                Text("Delete your account?")
+                    .bikeyFont(18, weight: .semibold, relativeTo: .headline)
+                    .foregroundStyle(AppColor.ink)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, BikeyMetrics.Spacing.m)
+
+                Text("This permanently deletes your account, saved phrases, and conversion history. This cannot be undone.")
+                    .bikeyFont(13, weight: .regular, relativeTo: .footnote)
+                    .foregroundStyle(AppColor.muted)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 6)
+                    .padding(.horizontal, BikeyMetrics.Spacing.l)
+
+                if let errorMessage {
+                    Text(errorMessage)
+                        .bikeyFont(12, weight: .regular, relativeTo: .footnote)
+                        .foregroundStyle(destructive)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, BikeyMetrics.Spacing.s)
+                        .padding(.horizontal, BikeyMetrics.Spacing.l)
+                }
+
+                VStack(spacing: 8) {
+                    Button(action: onConfirm) {
+                        ZStack {
+                            Text("Delete Account")
+                                .bikeyFont(15, weight: .semibold, relativeTo: .body)
+                                .foregroundStyle(.white)
+                                .opacity(isDeleting ? 0 : 1)
+                            if isDeleting {
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                                    .tint(.white)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(destructive, in: Capsule())
+                        .shadow(color: destructive.opacity(0.28), radius: 10, x: 0, y: 5)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isDeleting)
+
+                    Button(action: onCancel) {
+                        Text("Cancel")
+                            .bikeyFont(15, weight: .medium, relativeTo: .body)
+                            .foregroundStyle(AppColor.ink)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(.white, in: Capsule())
+                            .overlay(
+                                Capsule()
+                                    .stroke(AppColor.rule.opacity(0.45), lineWidth: 0.6)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isDeleting)
                 }
                 .padding(.horizontal, BikeyMetrics.Spacing.m)
                 .padding(.top, BikeyMetrics.Spacing.l)

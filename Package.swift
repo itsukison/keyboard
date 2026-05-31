@@ -22,6 +22,10 @@ let package = Package(
             .upToNextMinor(from: "0.11.1"),
             traits: ["Zenzai"]
         ),
+        .package(
+            url: "https://github.com/gdetari/SymSpellSwift",
+            .upToNextMinor(from: "0.1.4")
+        ),
     ],
     targets: [
         .target(
@@ -57,6 +61,13 @@ let package = Package(
                     name: "KanaKanjiConverterModuleWithDefaultDictionary",
                     package: "AzooKeyKanaKanjiConverter"
                 ),
+                .product(
+                    name: "SymSpellSwift",
+                    package: "SymSpellSwift"
+                ),
+            ],
+            resources: [
+                .process("Resources"),
             ],
             swiftSettings: [
                 .interoperabilityMode(.Cxx)

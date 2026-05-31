@@ -21,16 +21,16 @@ final class EnglishActionHandler: KeyboardAction.StandardActionHandler {
     }
 
     override func handle(_ gesture: Keyboard.Gesture, on action: KeyboardAction) {
-        if gesture == .release, case .custom(named: "longVowel") = action {
-            Task { @MainActor [weak englishController] in
-                englishController?.handleLongVowelAction()
+        if gesture == .press {
+            MainActor.assumeIsolated {
+                HapticFeedback.shared.tap()
             }
-            return
         }
 
         if gesture == .release, action == .space {
-            Task { @MainActor [weak englishController] in
-                englishController?.handleSpaceAction()
+            let controller = englishController
+            MainActor.assumeIsolated {
+                controller?.handleSpaceAction()
             }
             return
         }
@@ -47,8 +47,9 @@ final class EnglishActionHandler: KeyboardAction.StandardActionHandler {
 
         switch gesture {
         case .release, .repeatPress:
-            Task { @MainActor [weak englishController] in
-                englishController?.refreshSuggestionsAfterInput()
+            let controller = englishController
+            MainActor.assumeIsolated {
+                controller?.scheduleSuggestionsRefreshAfterInput()
             }
         default:
             break

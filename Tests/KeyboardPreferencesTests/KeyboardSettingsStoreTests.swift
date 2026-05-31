@@ -21,6 +21,35 @@ final class KeyboardSettingsStoreTests: XCTestCase {
         XCTAssertEqual(KeyboardSettingsStore.readCompositionDisplayMode(defaults: defaults), .balancedRaw)
     }
 
+    func testRoundTripsKeyboardStyle() {
+        let suiteName = "KeyboardSettingsStoreTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        KeyboardSettingsStore.writeKeyboardStyle(.japaneseRomaji, defaults: defaults)
+
+        XCTAssertEqual(KeyboardSettingsStore.readKeyboardStyle(defaults: defaults), .japaneseRomaji)
+    }
+
+    func testInvalidKeyboardStyleFallsBackToStandard() {
+        let suiteName = "KeyboardSettingsStoreTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set("broken", forKey: KeyboardSettingsStore.keyboardStyleKey)
+
+        XCTAssertEqual(KeyboardSettingsStore.readKeyboardStyle(defaults: defaults), .standard)
+    }
+
+    func testKeyboardStyleMigratesFromOldCompositionDisplayMode() {
+        let suiteName = "KeyboardSettingsStoreTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        KeyboardSettingsStore.writeCompositionDisplayMode(.japaneseHeavyKana, defaults: defaults)
+
+        XCTAssertEqual(KeyboardSettingsStore.readKeyboardStyle(defaults: defaults), .japaneseRomaji)
+        XCTAssertEqual(defaults.string(forKey: KeyboardSettingsStore.keyboardStyleKey), KeyboardStyle.japaneseRomaji.rawValue)
+    }
+
     func testUserDictionaryEntriesRoundTrip() {
         let suiteName = "KeyboardSettingsStoreTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!

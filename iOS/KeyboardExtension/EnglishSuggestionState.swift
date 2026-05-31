@@ -1,3 +1,4 @@
+import EnglishKeyboardCore
 import Foundation
 import KeyboardPreferences
 
@@ -32,6 +33,8 @@ struct SuggestionItem: Identifiable, Equatable, Sendable {
 @MainActor
 final class EnglishSuggestionState: ObservableObject {
     private(set) var displayMode: CompositionDisplayMode = KeyboardSettingsStore.readCompositionDisplayMode()
+    private(set) var keyboardStyle: KeyboardStyle = KeyboardSettingsStore.readKeyboardStyle()
+    private(set) var punctuationSet: AutoPunctuationSet = .english
     private(set) var previewTitle: String?
     private(set) var items: [SuggestionItem] = []
     var onSelect: ((SuggestionItem) -> Void)?
@@ -47,15 +50,23 @@ final class EnglishSuggestionState: ObservableObject {
     func update(
         displayMode: CompositionDisplayMode,
         previewTitle: String?,
-        items: [SuggestionItem]
+        items: [SuggestionItem],
+        keyboardStyle: KeyboardStyle? = nil,
+        punctuationSet: AutoPunctuationSet? = nil
     ) {
+        let nextKeyboardStyle = keyboardStyle ?? KeyboardSettingsStore.readKeyboardStyle()
+        let nextPunctuationSet = punctuationSet ?? self.punctuationSet
         guard self.displayMode != displayMode ||
+              self.keyboardStyle != nextKeyboardStyle ||
+              self.punctuationSet != nextPunctuationSet ||
               self.previewTitle != previewTitle ||
               self.items != items else {
             return
         }
         objectWillChange.send()
         self.displayMode = displayMode
+        self.keyboardStyle = nextKeyboardStyle
+        self.punctuationSet = nextPunctuationSet
         self.previewTitle = previewTitle
         self.items = items
     }

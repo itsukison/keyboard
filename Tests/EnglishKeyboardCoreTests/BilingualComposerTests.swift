@@ -61,6 +61,57 @@ final class BilingualComposerTests: XCTestCase {
         XCTAssertEqual(suggestions.map(\.deleteCount), Array(repeating: "hashi".count, count: 4))
     }
 
+    func testJapaneseSuggestionsUseLearnedPreferenceOrder() {
+        let composer = BilingualComposer(
+            converter: MockJapaneseConverter(mapping: [
+                "はし": ["橋", "端", "箸"],
+            ]),
+            conversionPreferenceEntries: {
+                [
+                    ConversionPreferenceEntry(
+                        scope: .japanese,
+                        inputKey: "hashi",
+                        candidateKey: "箸",
+                        displayText: "箸",
+                        acceptedCount: 2,
+                        lastUsedAt: Date(timeIntervalSince1970: 10),
+                        updatedAt: Date(timeIntervalSince1970: 10)
+                    ),
+                ]
+            }
+        )
+
+        let suggestions = composer.suggestions(beforeInput: "hashi")
+        let commit = composer.commitForSpace(beforeInput: "hashi")
+
+        XCTAssertEqual(suggestions.map(\.replacementText), ["箸", "橋", "端"])
+        XCTAssertEqual(commit?.replacementText, "箸")
+    }
+
+    func testRepeatedKeepRawSuppressesJapaneseSuggestionsAndCommit() {
+        let composer = BilingualComposer(
+            converter: MockJapaneseConverter(mapping: [
+                "はし": ["橋", "端", "箸"],
+            ]),
+            conversionPreferenceEntries: {
+                [
+                    ConversionPreferenceEntry(
+                        scope: .japanese,
+                        inputKey: "hashi",
+                        candidateKey: "hashi",
+                        displayText: "hashi",
+                        acceptedCount: 2,
+                        lastUsedAt: Date(timeIntervalSince1970: 10),
+                        updatedAt: Date(timeIntervalSince1970: 10)
+                    ),
+                ]
+            }
+        )
+
+        XCTAssertTrue(composer.suggestions(beforeInput: "hashi").isEmpty)
+        XCTAssertNil(composer.commitForSpace(beforeInput: "hashi"))
+    }
+
     func testSuggestionSetSharesSingleConversionForKeepRawAndCandidates() {
         let converter = MockJapaneseConverter(mapping: [
             "はし": ["橋", "箸"],
@@ -86,6 +137,37 @@ final class BilingualComposerTests: XCTestCase {
             "今日のmeetingは3時に",
             "きょうのmeetingは3時に",
         ])
+    }
+
+    func testMixedSuggestionsUseLearnedWholeReplacementOrder() {
+        let composer = BilingualComposer(
+            converter: MockJapaneseConverter(mapping: [
+                "きょうの": ["今日の", "きょうの"],
+                "は3じに": ["は3時に"],
+            ]),
+            conversionPreferenceEntries: {
+                [
+                    ConversionPreferenceEntry(
+                        scope: .japanese,
+                        inputKey: "kyounomeetingha3jini",
+                        candidateKey: "きょうのmeetingは3時に",
+                        displayText: "きょうのmeetingは3時に",
+                        acceptedCount: 2,
+                        lastUsedAt: Date(timeIntervalSince1970: 10),
+                        updatedAt: Date(timeIntervalSince1970: 10)
+                    ),
+                ]
+            }
+        )
+
+        let suggestions = composer.suggestions(beforeInput: "kyounomeetingha3jini")
+        let commit = composer.commitForSpace(beforeInput: "kyounomeetingha3jini")
+
+        XCTAssertEqual(suggestions.map(\.replacementText), [
+            "きょうのmeetingは3時に",
+            "今日のmeetingは3時に",
+        ])
+        XCTAssertEqual(commit?.replacementText, "きょうのmeetingは3時に")
     }
 
     func testLongJapaneseTakedoRunConvertsAsOneSpan() {
@@ -128,6 +210,20 @@ final class BilingualComposerTests: XCTestCase {
         XCTAssertTrue(BilingualComposer.containsJapaneseSpan(beforeInput: "kyou"))
         XCTAssertTrue(BilingualComposer.containsJapaneseSpan(beforeInput: "watashiha"))
         XCTAssertFalse(BilingualComposer.containsJapaneseSpan(beforeInput: "example.com"))
+    }
+
+    func testJapaneseEndingReplacementSuppressesSpaceAppend() {
+        XCTAssertTrue(BilingualComposer.endsWithJapaneseText("橋を渡る前に食べる"))
+        XCTAssertTrue(BilingualComposer.endsWithJapaneseText("今日のmeetingは3時に"))
+        XCTAssertTrue(BilingualComposer.endsWithJapaneseText("ミーティング"))
+        XCTAssertTrue(BilingualComposer.endsWithJapaneseText("今日は。"))
+    }
+
+    func testEnglishEndingReplacementKeepsSpaceAppend() {
+        XCTAssertFalse(BilingualComposer.endsWithJapaneseText("meeting"))
+        XCTAssertFalse(BilingualComposer.endsWithJapaneseText("今日のmeeting"))
+        XCTAssertFalse(BilingualComposer.endsWithJapaneseText("aware"))
+        XCTAssertFalse(BilingualComposer.endsWithJapaneseText("meeting。"))
     }
 
     func testEnglishHeavyDisplayModeDoesNotProduceToolbarPreview() {

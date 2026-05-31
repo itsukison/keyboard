@@ -88,6 +88,13 @@ final class UserSession: ObservableObject {
         state = .signedOut
     }
 
+    func deleteAccount() async throws {
+        try await supabase.functions.invoke("delete-user")
+        try? await supabase.auth.signOut()
+        UserDictionaryStore.writeEntries([])
+        state = .signedOut
+    }
+
     func refreshUserDictionaryCache() async throws {
         guard let profile else {
             UserDictionaryStore.writeEntries([])

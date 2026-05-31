@@ -9,10 +9,22 @@ public enum CompositionDisplayMode: String, Codable, Sendable, CaseIterable {
     }
 }
 
+public enum KeyboardStyle: String, Codable, Sendable, CaseIterable {
+    case standard
+    case japaneseRomaji
+
+    public var showsLongVowelKey: Bool {
+        self == .japaneseRomaji
+    }
+}
+
 public enum KeyboardSettingsStore {
     public static let appGroupIdentifier = "group.com.core7.bikey"
     public static let compositionDisplayModeKey = "compositionDisplayMode"
+    public static let keyboardStyleKey = "keyboardStyle"
+    public static let conversionPreferenceEntriesKey = "conversionPreferenceEntries"
     public static let userDictionaryEntriesKey = "userDictionaryEntries"
+    public static let hapticsEnabledKey = "hapticsEnabled"
 
     public static var sharedDefaults: UserDefaults? {
         UserDefaults(suiteName: appGroupIdentifier)
@@ -31,6 +43,39 @@ public enum KeyboardSettingsStore {
         defaults: UserDefaults? = sharedDefaults
     ) {
         defaults?.set(mode.rawValue, forKey: compositionDisplayModeKey)
+    }
+
+    public static func readKeyboardStyle(defaults: UserDefaults? = sharedDefaults) -> KeyboardStyle {
+        if let raw = defaults?.string(forKey: keyboardStyleKey) {
+            return KeyboardStyle(rawValue: raw) ?? .standard
+        }
+
+        guard let rawMode = defaults?.string(forKey: compositionDisplayModeKey),
+              let mode = CompositionDisplayMode(rawValue: rawMode) else {
+            return .standard
+        }
+
+        let migratedStyle: KeyboardStyle = mode.isJapaneseHeavy ? .japaneseRomaji : .standard
+        writeKeyboardStyle(migratedStyle, defaults: defaults)
+        return migratedStyle
+    }
+
+    public static func writeKeyboardStyle(
+        _ style: KeyboardStyle,
+        defaults: UserDefaults? = sharedDefaults
+    ) {
+        defaults?.set(style.rawValue, forKey: keyboardStyleKey)
+    }
+
+    public static func readHapticsEnabled(defaults: UserDefaults? = sharedDefaults) -> Bool {
+        defaults?.bool(forKey: hapticsEnabledKey) ?? false
+    }
+
+    public static func writeHapticsEnabled(
+        _ enabled: Bool,
+        defaults: UserDefaults? = sharedDefaults
+    ) {
+        defaults?.set(enabled, forKey: hapticsEnabledKey)
     }
 }
 

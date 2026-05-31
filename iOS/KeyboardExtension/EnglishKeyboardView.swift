@@ -1,3 +1,4 @@
+import EnglishKeyboardCore
 import KeyboardKit
 import SwiftUI
 
@@ -11,10 +12,7 @@ struct EnglishKeyboardView: View {
             layout: keyboardLayout,
             services: services,
             buttonContent: { params in
-                if case .custom(named: "longVowel") = params.item.action {
-                    Text("ー")
-                        .font(.system(size: 24, weight: .regular))
-                } else if params.item.action == .nextKeyboard {
+                if params.item.action == .nextKeyboard {
                     Image(systemName: "globe")
                         .font(.system(size: 22, weight: .regular))
                 } else {
@@ -32,18 +30,22 @@ struct EnglishKeyboardView: View {
 
     private var keyboardLayout: KeyboardLayout {
         var layout = KeyboardLayout.standard(for: keyboardContext)
+
         guard keyboardContext.keyboardType.isAlphabetic else {
+            if keyboardContext.keyboardType.isNumericOrSymbolic {
+                layout.applyAutoPunctuation(suggestions.punctuationSet)
+            }
             return layout
         }
 
         layout.insertInputModeSwitchKeyBeforeSpace()
 
-        guard suggestions.displayMode.isJapaneseHeavy else {
+        guard suggestions.keyboardStyle.showsLongVowelKey else {
             return layout
         }
 
-        layout.insert(.custom(named: "longVowel"), withWidth: .input, after: .character("l"))
-        layout.insert(.custom(named: "longVowel"), withWidth: .input, after: .character("L"))
+        layout.insert(.character("ー"), withWidth: .input, after: .character("l"))
+        layout.insert(.character("ー"), withWidth: .input, after: .character("L"))
         return layout
     }
 }
@@ -52,6 +54,24 @@ private extension KeyboardLayout {
     mutating func insertInputModeSwitchKeyBeforeSpace() {
         remove(.nextKeyboard)
         tryInsertBottomRowAction(.nextKeyboard, before: .space)
+    }
+
+    mutating func applyAutoPunctuation(_ punctuation: AutoPunctuationSet) {
+        replacePunctuationKey(english: ",", japanese: "、", replacement: punctuation.comma)
+        replacePunctuationKey(english: ".", japanese: "。", replacement: punctuation.period)
+        replacePunctuationKey(english: "?", japanese: "？", replacement: punctuation.questionMark)
+        replacePunctuationKey(english: "!", japanese: "！", replacement: punctuation.exclamationMark)
+    }
+
+    mutating func replacePunctuationKey(english: String, japanese: String, replacement: String) {
+        for current in [english, japanese] where current != replacement {
+            let action = KeyboardAction.character(current)
+            for rowIndex in itemRows.indices {
+                for itemIndex in itemRows[rowIndex].indices where itemRows[rowIndex][itemIndex].action == action {
+                    itemRows[rowIndex][itemIndex].action = .character(replacement)
+                }
+            }
+        }
     }
 }
 

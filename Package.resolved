@@ -1,5 +1,5 @@
 {
-  "originHash" : "f79625ea73362c149e19448dbaba77805aed8e499e21170ee3a842164f50eb89",
+  "originHash" : "58d7eaaded1f4d9962d7868d65392c32a843d97f2e4e33e3c4581b8a16a55161",
   "pins" : [
     {
       "identity" : "azookeykanakanjiconverter",
@@ -161,6 +161,15 @@
       "state" : {
         "revision" : "91acc3cb0e747e0bd4b0e0813d42fb273d10e62f",
         "version" : "0.0.1"
+      }
+    },
+    {
+      "identity" : "symspellswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/gdetari/SymSpellSwift",
+      "state" : {
+        "revision" : "673246e16338440f6895e119bfacab308d11fce0",
+        "version" : "0.1.4"
       }
     },
     {
