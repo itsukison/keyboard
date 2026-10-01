@@ -1,4 +1,0 @@
-module KanaKanjiConverterModule {
-header "KanaKanjiConverterModule-Swift.h"
-export *
-}
